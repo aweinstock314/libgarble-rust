@@ -1,0 +1,11 @@
+[package]
+name = "libgarble"
+version = "0.1.0"
+authors = ["aweinstock"]
+
+[lib]
+name="garble"
+crate-type=["staticlib", "dylib"]
+
+[dependencies]
+simd = { git = "https://github.com/huonw/simd" }
