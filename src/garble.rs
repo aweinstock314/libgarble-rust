@@ -1,6 +1,20 @@
-#[no_mangle] pub extern fn garble_allocate_blocks() {
-    panic!("garble_allocate_blocks");
+use libc::{c_void, posix_memalign};
+use simd::u8x16;
+use std::mem;
+use std::ptr;
+
+#[no_mangle] pub extern fn garble_allocate_blocks(nblocks: usize) -> *mut u8x16 {
+    let mut blocks: *mut c_void = ptr::null_mut();
+    let res = unsafe { posix_memalign(&mut blocks, mem::align_of::<u8x16>(), nblocks * mem::size_of::<u8x16>()) };
+    println!("garble_allocate_blocks: {}, {:p}", res, blocks);
+    if res == 0 {
+        blocks as *mut u8x16
+    } else {
+        println!("posix_memalign failed: {}", res);
+        ptr::null_mut()
+    }
 }
+
 #[no_mangle] pub extern fn garble_check() {
     panic!("garble_check");
 }
