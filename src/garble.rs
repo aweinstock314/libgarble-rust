@@ -90,8 +90,17 @@ pub struct GarbleCircuit {
 #[no_mangle] pub extern fn garble_eval() {
     panic!("garble_eval");
 }
-#[no_mangle] pub extern fn garble_extract_labels() {
-    panic!("garble_extract_labels");
+#[no_mangle] pub extern fn garble_extract_labels(extracted_labels: *mut Block, labels: *const Block, bits: *const bool, n: usize) {
+    println!("garble_extract_labels({:p}, {:p}, {:p}, {})", extracted_labels, labels, bits, n);
+    let (extracted_labels, labels, bits) = unsafe {(
+        slice::from_raw_parts_mut(extracted_labels, n),
+        slice::from_raw_parts(labels, 2*n),
+        slice::from_raw_parts(bits, n),
+    )};
+    for i in 0..n {
+        extracted_labels[i] = labels[2 * i + (if bits[i] { 1 } else { 0 })];
+    }
+    //println!("extracted_labels: {:?}\nbits: {:?}", extracted_labels, bits);
 }
 #[no_mangle] pub extern fn garble_from_buffer() {
     panic!("garble_from_buffer");
