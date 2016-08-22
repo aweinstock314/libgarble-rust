@@ -8,11 +8,17 @@ use std::{mem, ptr, slice};
 
 type Block = u8x16;
 
+#[inline]
 fn block_from_u64x2(lo: u64, hi: u64) -> Block {
     let mut tmp = [0u8;16];
     LittleEndian::write_u64(&mut tmp[0..8], lo);
     LittleEndian::write_u64(&mut tmp[8..16], hi);
     Block::load(&tmp, 0)
+}
+
+#[inline]
+fn block_equals(x: Block, y: Block) -> bool {
+    x.eq(y).all()
 }
 
 #[inline]
@@ -391,8 +397,26 @@ fn garble_privacyfree(gc: &mut GarbleCircuit, key: &AesKey, delta: Block) {
 #[no_mangle] pub extern fn garble_load() {
     panic!("garble_load");
 }
-#[no_mangle] pub extern fn garble_map_outputs() {
-    panic!("garble_map_outputs");
+#[no_mangle] pub extern fn garble_map_outputs(output_labels: *const Block, map: *const Block, vals: *mut bool, m: usize) -> c_int {
+    println!("garble_map_outputs({:p}, {:p}, {:p}, {})", output_labels, map, vals, m);
+    let (output_labels, map, vals) = unsafe {(
+        slice::from_raw_parts(output_labels, 2*m),
+        slice::from_raw_parts(map, m),
+        slice::from_raw_parts_mut(vals, m),
+    )};
+    for ((m, v), out) in map.iter().zip(vals.iter_mut()).zip(output_labels.chunks(2)) {
+        assert!(out.len() == 2);
+        println!("{:?}, {:?}, {:?}", *m, out[0], out[1]);
+        if block_equals(*m, out[0]) {
+            *v = false;
+        } else if block_equals(*m, out[1]) {
+            *v = true;
+        } else {
+            return GARBLE_ERR;
+        }
+    }
+    println!("vals: {:?}", vals);
+    GARBLE_OK
 }
 #[no_mangle] pub extern fn garble_new(gc: *mut GarbleCircuit, n: usize, m: usize, ty: GarbleType) -> c_int {
     println!("garble_new({:p}, {}, {}, {:?})", gc, n, m, ty);
