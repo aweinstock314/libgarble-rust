@@ -1,5 +1,6 @@
 use byteorder::{ByteOrder, LittleEndian};
 use libc::{c_int, c_void, calloc, posix_memalign};
+use openssl::crypto::hash;
 use openssl_sys::RAND_bytes;
 use simd::u8x16;
 use std::cell::UnsafeCell;
@@ -284,8 +285,17 @@ fn garble_privacyfree(gc: &mut GarbleCircuit, key: &AesKey, delta: Block) {
     panic!("garble_privacyfree");
 }
 
-#[no_mangle] pub extern fn garble_hash() {
-    panic!("garble_hash");
+#[no_mangle] pub extern fn garble_hash(gc: *const GarbleCircuit, hash_dest: *mut u8) {
+    static SHA_DIGEST_LENGTH: usize = 20;
+    if let Some(gc) = unsafe { gc.as_ref() } {
+        let table_bytes = unsafe { mem::transmute::<*mut Block, *mut u8>(gc.table) };
+        let table_slice = unsafe { slice::from_raw_parts(table_bytes, gc.q * garble_table_size(gc)) };
+        let result = hash::hash(hash::Type::SHA1, table_slice).expect("garble_hash: sha1 failed");
+        println!("garble_hash({:?}) = {:?}", gc, result);
+        unsafe { ptr::copy(result.as_ptr(), hash_dest, SHA_DIGEST_LENGTH) };
+    } else {
+        println!("garble_hash(NULL)");
+    }
 }
 #[no_mangle] pub extern fn garble_load() {
     panic!("garble_load");
