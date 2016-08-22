@@ -7,8 +7,25 @@ use std::{mem, ptr, slice};
 
 type Block = u8x16;
 
+fn block_from_u64x2(lo: u64, hi: u64) -> Block {
+    let mut tmp = [0u8;16];
+    LittleEndian::write_u64(&mut tmp[0..8], lo);
+    LittleEndian::write_u64(&mut tmp[8..16], hi);
+    Block::load(&tmp, 0)
+}
+
 static GARBLE_OK: c_int = 0;
 static GARBLE_ERR: c_int = -1;
+
+
+//                              x:  1100
+//                              y:  1010
+pub static GARBLE_GATE_ZERO: u8 = 0b0000;
+pub static GARBLE_GATE_ONE: u8  = 0b1111;
+pub static GARBLE_GATE_AND: u8  = 0b1000;
+pub static GARBLE_GATE_OR: u8   = 0b1110;
+pub static GARBLE_GATE_XOR: u8  = 0b0110;
+pub static GARBLE_GATE_NOT: u8  = 0b0101; // |x,y| { !y }
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
@@ -147,9 +164,9 @@ fn garble_table_size(gc: *const GarbleCircuit) -> usize {
     aes_set_encrypt_key(gc.global_key, &mut key);
 
     match gc.ty {
-        GarbleType::Standard => garble_standard(gc, &mut key, delta),
-        GarbleType::HalfGates => garble_halfgates(gc, &mut key, delta),
-        GarbleType::PrivacyFree => garble_privacyfree(gc, &mut key, delta),
+        GarbleType::Standard => garble_standard(gc, &key, delta),
+        GarbleType::HalfGates => garble_halfgates(gc, &key, delta),
+        GarbleType::PrivacyFree => garble_privacyfree(gc, &key, delta),
     }
 
     for i in 0..gc.m {
@@ -174,15 +191,95 @@ fn garble_table_size(gc: *const GarbleCircuit) -> usize {
     GARBLE_OK
 }
 
-fn garble_standard(gc: &mut GarbleCircuit, key: &mut AesKey, delta: Block) {
-    let _ = (gc, key, delta); // warning suppression
-    panic!("garble_standard");
+fn garble_gate_standard(ty: u8,
+    mut a0: Block, mut a1: Block, mut b0: Block, mut b1: Block,
+    out0: *mut Block, out1: *mut Block,
+    delta: Block, table: *mut Block, idx: isize, key: &AesKey) {
+    if ty == GARBLE_GATE_XOR {
+        unsafe {
+            *out0 = a0 ^ b0;
+            *out1 = *out0 ^ delta;
+        }
+    } else {
+        let tweak = block_from_u64x2(0, idx as u64);
+        let lsb0 = (a0.extract(0) & 1) as isize;
+        let lsb1 = (b0.extract(0) & 1) as isize;
+        fn double_xmm(mut x: Block) -> Block {
+            unsafe { asm!("psllq $$1, $0" : "=x"(x) : "x"(x)); }
+            x
+        }
+        fn quadruple_xmm(mut x: Block) -> Block {
+            unsafe { asm!("psllq $$2, $0" : "=x"(x) : "x"(x)); }
+            x
+        }
+        a0 = double_xmm(a0);
+        a1 = double_xmm(a1);
+        b0 = quadruple_xmm(b0);
+        b1 = quadruple_xmm(b1);
+        let mut keys = [
+            a0 ^ b0 ^ tweak,
+            a0 ^ b1 ^ tweak,
+            a1 ^ b0 ^ tweak,
+            a1 ^ b1 ^ tweak,
+        ];
+        let mut mask = keys.clone();
+        aes_ecb_encrypt_blocks(&mut keys[0..4], key);
+        for (m,k) in mask.iter_mut().zip(keys.iter()) {
+            *m = *m ^ *k;
+        }
+        let newtoken0 = mask[(2 * lsb0 + lsb1) as usize];
+        let newtoken1 = newtoken0 ^ delta;
+
+        let (label0, label1) = if lsb0 & lsb1 == 1 { (newtoken1, newtoken0) } else { (newtoken0, newtoken1) };
+        unsafe {
+            *out0 = label0;
+            *out1 = label1;
+        }
+        let blocks = [
+            label0,
+            label0,
+            label0,
+            label1,
+        ];
+
+        unsafe {
+            if 2*lsb0 + lsb1 != 0 {
+                *table.offset(2*lsb0 + lsb1 -1) = blocks[0] ^ mask[0];
+            }
+            if 2*lsb0 + (1-lsb1) != 0 {
+                *table.offset(2*lsb0 + (1-lsb1)-1) = blocks[1] ^ mask[1];
+            }
+            if 2*(1-lsb0) + lsb1 != 0 {
+                *table.offset(2*(1-lsb0) + lsb1-1) = blocks[2] ^ mask[2];
+            }
+            if 2*(1-lsb0) + (1-lsb1) != 0 {
+                *table.offset(2*(1-lsb0) + (1-lsb1)-1) = blocks[3] ^ mask[3];
+            }
+        }
+    }
 }
-fn garble_halfgates(gc: &mut GarbleCircuit, key: &mut AesKey, delta: Block) {
+
+fn garble_standard(gc: &mut GarbleCircuit, key: &AesKey, delta: Block) {
+    for i in 0..gc.q {
+        let i = i as isize;
+        unsafe {
+            let g: &mut GarbleGate = gc.gates.offset(i).as_mut().unwrap();
+            garble_gate_standard(g.ty,
+                *gc.wires.offset(2 * (g.in0 as isize)),
+                *gc.wires.offset(2 * (g.in0 as isize) + 1),
+                *gc.wires.offset(2 * (g.in1 as isize)),
+                *gc.wires.offset(2 * (g.in1 as isize) + 1),
+                gc.wires.offset(2 * (g.out as isize)),
+                gc.wires.offset(2 * (g.out as isize) + 1),
+                delta, gc.table.offset(3 * i), i, key);
+        }
+    }
+}
+fn garble_halfgates(gc: &mut GarbleCircuit, key: &AesKey, delta: Block) {
     let _ = (gc, key, delta); // warning suppression
     panic!("garble_halfgates");
 }
-fn garble_privacyfree(gc: &mut GarbleCircuit, key: &mut AesKey, delta: Block) {
+fn garble_privacyfree(gc: &mut GarbleCircuit, key: &AesKey, delta: Block) {
     let _ = (gc, key, delta); // warning suppression
     panic!("garble_privacyfree");
 }
@@ -224,14 +321,17 @@ pub extern fn garble_random_block() -> Block {
     let current_rand_index = unsafe { CURRENT_RAND_INDEX.as_mut() };
     let rand_aes_key = unsafe { RAND_AES_KEY.as_mut() };
     *current_rand_index += 1;
-    let mut tmp = [0u8;16];
 
+    //let mut tmp = [0u8;16];
     // All 3 of these compile down to the exact same assembly
-    LittleEndian::write_u64(&mut tmp[0..8], *current_rand_index);
-    //tmp[0..8].copy_from_slice(&unsafe { mem::transmute::<u64,[u8;8]>(*current_rand_index) });
-    //unsafe { ptr::copy(mem::transmute::<&u64,&u8>(current_rand_index), tmp.as_mut_ptr(), 8) };
+    // /* 1 */ LittleEndian::write_u64(&mut tmp[0..8], *current_rand_index);
+    // /* 2 */ tmp[0..8].copy_from_slice(&unsafe { mem::transmute::<u64,[u8;8]>(*current_rand_index) });
+    // /* 3 */ unsafe { ptr::copy(mem::transmute::<&u64,&u8>(current_rand_index), tmp.as_mut_ptr(), 8) };
+    //let mut out = Block::load(&tmp, 0);
 
-    let mut out = Block::load(&tmp, 0);
+    // This manages to be even more efficient (mov from rcx to xmm0 instead of spilling to the stack)
+    let mut out = block_from_u64x2(*current_rand_index, 0);
+
     out = out ^ rand_aes_key.rd_key[0];
     for i in 1..10 {
         unsafe {
@@ -308,6 +408,25 @@ fn aes_set_encrypt_key(userkey: Block, key: &mut AesKey) {
     expand_assist!(x0, x1, x2, x0, "255", "54");
     key.rd_key[10] = x0;
     key.rounds = 10;
+}
+
+fn aes_ecb_encrypt_blocks(blocks: &mut[Block], key: &AesKey) {
+    static ROUNDS: usize = 10;
+    for b in blocks.iter_mut() {
+        *b = *b ^ key.rd_key[0];
+    }
+    for j in 1..ROUNDS {
+        for b in blocks.iter_mut() {
+            unsafe {
+                asm!("aesenc $1, $0" : "=x"(*b) : "x"(key.rd_key[j]), "x"(*b));
+            }
+        }
+    }
+    for b in blocks.iter_mut() {
+        unsafe {
+            asm!("aesenclast $1, $0" : "=x"(*b) : "x"(key.rd_key[ROUNDS]), "x"(*b));
+        }
+    }
 }
 
 #[no_mangle] pub extern fn garble_seed(seed: *mut Block) -> Block {
