@@ -1,5 +1,5 @@
 use byteorder::{ByteOrder, LittleEndian};
-use libc::{c_int, c_void, calloc, posix_memalign};
+use libc::{c_int, c_void, calloc, free, posix_memalign};
 use openssl::crypto::hash;
 use openssl_sys::RAND_bytes;
 use simd::u8x16;
@@ -14,6 +14,18 @@ fn block_from_u64x2(lo: u64, hi: u64) -> Block {
     LittleEndian::write_u64(&mut tmp[8..16], hi);
     Block::load(&tmp, 0)
 }
+
+#[inline]
+fn double_xmm(mut x: Block) -> Block {
+    unsafe { asm!("psllq $$1, $0" : "=x"(x) : "x"(x)); }
+    x
+}
+#[inline]
+fn quadruple_xmm(mut x: Block) -> Block {
+    unsafe { asm!("psllq $$2, $0" : "=x"(x) : "x"(x)); }
+    x
+}
+
 
 static GARBLE_OK: c_int = 0;
 static GARBLE_ERR: c_int = -1;
@@ -87,9 +99,87 @@ pub struct GarbleCircuit {
 #[no_mangle] pub extern fn garble_delete() {
     panic!("garble_delete");
 }
-#[no_mangle] pub extern fn garble_eval() {
-    panic!("garble_eval");
+
+#[no_mangle] pub extern fn garble_eval(gc: *const GarbleCircuit, input_labels: *const Block, output_labels: *mut Block, outputs: *mut bool) -> c_int {
+    println!("garble_eval({:p}, {:p}, {:p}, {:p})", gc, input_labels, output_labels, outputs);
+    let gc = if let Some(gc) = unsafe { gc.as_ref() } { gc } else { return GARBLE_ERR; };
+    let mut key = unsafe { mem::uninitialized() };
+    aes_set_encrypt_key(gc.global_key, &mut key);
+    let labels: &mut [Block] = unsafe { slice::from_raw_parts_mut(garble_allocate_blocks(gc.r), gc.r) };
+    unsafe { ptr::copy(input_labels, labels.as_mut_ptr(), gc.n) };
+    let mut fixed_label = gc.fixed_label;
+    fixed_label = fixed_label.replace(0, fixed_label.extract(0) & 0xfe);
+    labels[gc.n] = fixed_label;
+    fixed_label = fixed_label.replace(0, fixed_label.extract(0) & 0x01);
+    labels[gc.n+1] = fixed_label;
+
+    match gc.ty {
+        GarbleType::Standard => eval_standard(gc, labels, &key),
+        GarbleType::HalfGates => eval_halfgates(gc, labels, &key),
+        GarbleType::PrivacyFree => eval_privacyfree(gc, labels, &key),
+    }
+
+    let gc_outputs = unsafe { slice::from_raw_parts(gc.outputs, gc.m) };
+    let gc_perms = unsafe { slice::from_raw_parts(gc.output_perms, gc.m) };
+
+    if !output_labels.is_null() {
+        let output_labels = unsafe { slice::from_raw_parts_mut(output_labels, gc.m) };
+        for (i, label) in output_labels.iter_mut().enumerate() {
+            *label = labels[gc_outputs[i] as usize];
+        }
+    }
+
+    if !outputs.is_null() {
+        let outputs = unsafe { slice::from_raw_parts_mut(outputs, gc.m) };
+        for (i, out) in outputs.iter_mut().enumerate() {
+            *out = (labels[gc_outputs[i] as usize].extract(0) & 1) ^ (gc_perms[i] as u8) == 1;
+        }
+    }
+
+    unsafe { free(labels.as_ptr() as _); }
+
+    GARBLE_OK
 }
+
+fn eval_standard(gc: &GarbleCircuit, labels: &mut [Block], key: &AesKey) {
+    for i in 0..gc.q {
+        let i = i as isize;
+        unsafe {
+            let g: &GarbleGate = gc.gates.offset(i).as_mut().unwrap();
+            eval_gate_standard(g.ty,
+                labels[g.in0],
+                labels[g.in1],
+                &mut labels[g.out],
+                gc.table.offset(3*i),
+                i, key);
+        }
+    }
+}
+fn eval_halfgates(gc: &GarbleCircuit, labels: &[Block], key: &AesKey) {
+    let _ = (gc, labels, key); // warning suppression
+    panic!("eval_halfgates");
+}
+fn eval_privacyfree(gc: &GarbleCircuit, labels: &[Block], key: &AesKey) {
+    let _ = (gc, labels, key); // warning suppression
+    panic!("eval_privacyfree");
+}
+
+fn eval_gate_standard(ty: u8, a: Block, b: Block, out: &mut Block, table: *const Block, idx: isize, key: &AesKey) {
+    if ty == GARBLE_GATE_XOR {
+        *out = a ^ b;
+    } else {
+        let lsb0 = (a.extract(0) & 1) as isize;
+        let lsb1 = (b.extract(0) & 1) as isize;
+        let ha = double_xmm(a);
+        let hb = quadruple_xmm(b);
+        let tweak = block_from_u64x2(0, idx as u64);
+        let val = ha ^ hb ^ tweak;
+        let mut tmp = [if lsb0 + lsb1 > 0 { unsafe { *table.offset(2*lsb0 + lsb1 - 1) ^ val } } else { val }];
+        aes_ecb_encrypt_blocks(&mut tmp, key);
+        *out = val ^ tmp[0];
+    }
+}
+
 #[no_mangle] pub extern fn garble_extract_labels(extracted_labels: *mut Block, labels: *const Block, bits: *const bool, n: usize) {
     println!("garble_extract_labels({:p}, {:p}, {:p}, {})", extracted_labels, labels, bits, n);
     let (extracted_labels, labels, bits) = unsafe {(
@@ -214,14 +304,6 @@ fn garble_gate_standard(ty: u8,
         let tweak = block_from_u64x2(0, idx as u64);
         let lsb0 = (a0.extract(0) & 1) as isize;
         let lsb1 = (b0.extract(0) & 1) as isize;
-        fn double_xmm(mut x: Block) -> Block {
-            unsafe { asm!("psllq $$1, $0" : "=x"(x) : "x"(x)); }
-            x
-        }
-        fn quadruple_xmm(mut x: Block) -> Block {
-            unsafe { asm!("psllq $$2, $0" : "=x"(x) : "x"(x)); }
-            x
-        }
         a0 = double_xmm(a0);
         a1 = double_xmm(a1);
         b0 = quadruple_xmm(b0);
