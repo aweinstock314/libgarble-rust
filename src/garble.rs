@@ -22,6 +22,16 @@ fn block_equals(x: Block, y: Block) -> bool {
 }
 
 #[inline]
+fn block_setlsb(x: Block) -> Block {
+    x | block_from_u64x2(1,0)
+}
+
+#[inline]
+fn block_clearlsb(x: Block) -> Block {
+    x & block_from_u64x2(!0-1,!0)
+}
+
+#[inline]
 fn double_xmm(mut x: Block) -> Block {
     unsafe { asm!("psllq $$1, $0" : "=x"(x) : "x"(x)); }
     x
@@ -97,7 +107,7 @@ pub struct GarbleCircuit {
 #[no_mangle] pub extern fn garble_create_delta() -> Block {
     println!("garble_create_delta");
     let delta = garble_random_block();
-    delta.replace(0, delta.extract(0) | 1)
+    block_setlsb(delta)
 }
 #[no_mangle] pub extern fn garble_create_input_labels() {
     panic!("garble_create_input_labels");
@@ -113,11 +123,9 @@ pub struct GarbleCircuit {
     aes_set_encrypt_key(gc.global_key, &mut key);
     let labels: &mut [Block] = unsafe { slice::from_raw_parts_mut(garble_allocate_blocks(gc.r), gc.r) };
     unsafe { ptr::copy(input_labels, labels.as_mut_ptr(), gc.n) };
-    let mut fixed_label = gc.fixed_label;
-    fixed_label = fixed_label.replace(0, fixed_label.extract(0) & 0xfe);
-    labels[gc.n] = fixed_label;
-    fixed_label = fixed_label.replace(0, fixed_label.extract(0) & 0x01);
-    labels[gc.n+1] = fixed_label;
+    let fixed_label = gc.fixed_label;
+    labels[gc.n] = block_clearlsb(fixed_label);
+    labels[gc.n+1] = block_setlsb(fixed_label);
 
     match gc.ty {
         GarbleType::Standard => eval_standard(gc, labels, &key),
@@ -247,23 +255,21 @@ fn garble_table_size(gc: *const GarbleCircuit) -> usize {
                 let wire1 = gc.wires.offset(2*i + 1);
                 *wire0 = garble_random_block();
                 if let GarbleType::PrivacyFree = gc.ty {
-                    *wire0 = (*wire0).replace(0, (*wire0).extract(0) & 0xfe);
+                    *wire0 = block_clearlsb(*wire0);
                 }
                 *wire1 = *wire0 ^ delta;
             }
         }
     }
 
-    let mut fixed_label = garble_random_block();
+    let fixed_label = garble_random_block();
     gc.fixed_label = fixed_label;
     unsafe {
-        fixed_label = fixed_label.replace(0, fixed_label.extract(0) & 0xfe);
-        *gc.wires.offset((2*gc.n) as _) = fixed_label;
-        *gc.wires.offset((2*gc.n+1) as _) = fixed_label ^ delta;
+        *gc.wires.offset((2*gc.n) as _) = block_clearlsb(fixed_label);
+        *gc.wires.offset((2*gc.n+1) as _) = block_clearlsb(fixed_label) ^ delta;
 
-        fixed_label = fixed_label.replace(0, fixed_label.extract(0) | 0x01);
-        *gc.wires.offset((2*(gc.n+1)) as _) = fixed_label;
-        *gc.wires.offset((2*(gc.n+1)+1) as _) = fixed_label ^ delta;
+        *gc.wires.offset((2*(gc.n+1)) as _) = block_setlsb(fixed_label);
+        *gc.wires.offset((2*(gc.n+1)+1) as _) = block_setlsb(fixed_label) ^ delta;
     }
 
     gc.global_key = garble_random_block();
