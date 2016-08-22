@@ -8,6 +8,7 @@ name="garble"
 crate-type=["staticlib", "dylib"]
 
 [dependencies]
+byteorder = "0.5.3"
 libc = "0.2.15"
 openssl-sys = "0.7.17"
 simd = { git = "https://github.com/huonw/simd" }

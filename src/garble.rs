@@ -1,3 +1,4 @@
+use byteorder::{ByteOrder, LittleEndian};
 use libc::{c_int, c_void, calloc, posix_memalign};
 use openssl_sys::RAND_bytes;
 use simd::u8x16;
@@ -223,9 +224,13 @@ pub extern fn garble_random_block() -> Block {
     let current_rand_index = unsafe { CURRENT_RAND_INDEX.as_mut() };
     let rand_aes_key = unsafe { RAND_AES_KEY.as_mut() };
     *current_rand_index += 1;
-    // TODO: check if the higher-level "byteorder" crate compiles to the same assembly as transmute
     let mut tmp = [0u8;16];
-    tmp[0..8].copy_from_slice(&unsafe { mem::transmute::<u64,[u8;8]>(*current_rand_index) });
+
+    // All 3 of these compile down to the exact same assembly
+    LittleEndian::write_u64(&mut tmp[0..8], *current_rand_index);
+    //tmp[0..8].copy_from_slice(&unsafe { mem::transmute::<u64,[u8;8]>(*current_rand_index) });
+    //unsafe { ptr::copy(mem::transmute::<&u64,&u8>(current_rand_index), tmp.as_mut_ptr(), 8) };
+
     let mut out = Block::load(&tmp, 0);
     out = out ^ rand_aes_key.rd_key[0];
     for i in 1..10 {
