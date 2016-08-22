@@ -116,21 +116,19 @@ pub struct GarbleCircuit {
 }
 
 #[derive(Debug)]
-struct AesKeyInner {
+struct AesKey {
     rd_key: [Block; 11],
     rounds: usize
 }
-struct AesKey {
-    inner: UnsafeCell<AesKeyInner>
-}
-unsafe impl Sync for AesKey {}
+struct GlobalWrapper<T>(UnsafeCell<T>);
+unsafe impl<T> Sync for GlobalWrapper<T> {}
 
 // unsafe global variable for compatibility with the C library
-static RAND_AES_KEY: AesKey = AesKey { inner: UnsafeCell::new(
-    AesKeyInner { rd_key: [Block::splat(0); 11], rounds: 0 }
-)};
+static RAND_AES_KEY: GlobalWrapper<AesKey> = GlobalWrapper(UnsafeCell::new(
+    AesKey { rd_key: [Block::splat(0); 11], rounds: 0 }
+));
 
-fn aes_set_encrypt_key(userkey: Block, key: &mut AesKeyInner) {
+fn aes_set_encrypt_key(userkey: Block, key: &mut AesKey) {
     macro_rules! expand_assist {
         ($v1:ident, $v2:ident, $v3:ident, $v4:ident, $shuff_const:expr, $aes_const:expr) => {
             unsafe {
@@ -183,7 +181,7 @@ fn aes_set_encrypt_key(userkey: Block, key: &mut AesKeyInner) {
             }
         }
     }
-    let aes: &mut AesKeyInner = unsafe { RAND_AES_KEY.inner.get().as_mut().unwrap() };
+    let aes: &mut AesKey = unsafe { RAND_AES_KEY.0.get().as_mut().unwrap() };
     aes_set_encrypt_key(cur_seed, aes);
     println!("seeded: {:?}", aes);
     cur_seed
