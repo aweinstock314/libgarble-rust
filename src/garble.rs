@@ -182,15 +182,15 @@ fn eval_gate_standard(ty: u8, a: Block, b: Block, out: &mut Block, table: *const
     if ty == GARBLE_GATE_XOR {
         *out = a ^ b;
     } else {
-        let lsb0 = (a.extract(0) & 1) as isize;
-        let lsb1 = (b.extract(0) & 1) as isize;
+        let lsb_a = (a.extract(0) & 1) as isize;
+        let lsb_b = (b.extract(0) & 1) as isize;
         let ha = double_xmm(a);
         let hb = quadruple_xmm(b);
         let tweak = block_from_u64x2(0, idx as u64);
-        let val = ha ^ hb ^ tweak;
-        let mut tmp = [if lsb0 + lsb1 > 0 { unsafe { *table.offset(2*lsb0 + lsb1 - 1) ^ val } } else { val }];
-        aes_ecb_encrypt_blocks(&mut tmp, key);
-        *out = val ^ tmp[0];
+        let mut val = [ha ^ hb ^ tweak];
+        let tmp = if lsb_a + lsb_b > 0 { unsafe { *table.offset(2*lsb_a + lsb_b - 1) ^ val[0] } } else { val[0] };
+        aes_ecb_encrypt_blocks(&mut val, key);
+        *out = val[0] ^ tmp;
     }
 }
 
@@ -410,9 +410,9 @@ fn garble_privacyfree(gc: &mut GarbleCircuit, key: &AesKey, delta: Block) {
         slice::from_raw_parts(map, m),
         slice::from_raw_parts_mut(vals, m),
     )};
-    for ((m, v), out) in map.iter().zip(vals.iter_mut()).zip(output_labels.chunks(2)) {
-        assert!(out.len() == 2);
-        println!("{:?}, {:?}, {:?}", *m, out[0], out[1]);
+    for (i, (m, v)) in map.iter().zip(vals.iter_mut()).enumerate() {
+        let out = [output_labels[2*i], output_labels[2*i+1]];
+        println!("{}: {:?}, {:?}, {:?}", i, *m, out[0], out[1]);
         if block_equals(*m, out[0]) {
             *v = false;
         } else if block_equals(*m, out[1]) {
@@ -458,21 +458,12 @@ pub extern fn garble_random_block() -> Block {
     // /* 1 */ LittleEndian::write_u64(&mut tmp[0..8], *current_rand_index);
     // /* 2 */ tmp[0..8].copy_from_slice(&unsafe { mem::transmute::<u64,[u8;8]>(*current_rand_index) });
     // /* 3 */ unsafe { ptr::copy(mem::transmute::<&u64,&u8>(current_rand_index), tmp.as_mut_ptr(), 8) };
-    //let mut out = Block::load(&tmp, 0);
+    //let mut out = [Block::load(&tmp, 0)];
 
     // This manages to be even more efficient (mov from rcx to xmm0 instead of spilling to the stack)
-    let mut out = block_from_u64x2(*current_rand_index, 0);
-
-    out = out ^ rand_aes_key.rd_key[0];
-    for i in 1..10 {
-        unsafe {
-            asm!("aesenc %xmm1, %xmm0" : "={xmm0}"(out) : "{xmm0}"(out), "{xmm1}"(rand_aes_key.rd_key[i]));
-        }
-    }
-    unsafe {
-        asm!("aesenclast %xmm1, %xmm0": "={xmm0}"(out) : "{xmm0}"(out), "{xmm1}"(rand_aes_key.rd_key[10]));
-    }
-    out
+    let mut out = [block_from_u64x2(*current_rand_index, 0)];
+    aes_ecb_encrypt_blocks(&mut out, rand_aes_key);
+    out[0]
 }
 
 #[no_mangle] pub extern fn garble_save() {
@@ -541,7 +532,7 @@ fn aes_set_encrypt_key(userkey: Block, key: &mut AesKey) {
     key.rounds = 10;
 }
 
-fn aes_ecb_encrypt_blocks(blocks: &mut[Block], key: &AesKey) {
+fn aes_ecb_encrypt_blocks(blocks: &mut [Block], key: &AesKey) {
     static ROUNDS: usize = 10;
     for b in blocks.iter_mut() {
         *b = *b ^ key.rd_key[0];
