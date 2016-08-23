@@ -95,8 +95,13 @@ pub struct GarbleCircuit {
     }
 }
 
-#[no_mangle] pub extern fn garble_check() {
-    panic!("garble_check");
+#[no_mangle] pub extern fn garble_check(gc: *const GarbleCircuit, oldhash: *const u8) -> c_int {
+    let gc = if let Some(gc) = unsafe { gc.as_ref() } { gc } else { return GARBLE_ERR; };
+    let oldhash = unsafe { if let Some(oldhash) = oldhash.as_ref() { slice::from_raw_parts(oldhash, SHA_DIGEST_LENGTH) } else { return GARBLE_ERR; } };
+    println!("garble_check({:?}, {:?})", gc, oldhash);
+    let mut newhash = [0u8; SHA_DIGEST_LENGTH];
+    garble_hash(gc, newhash.as_mut_ptr());
+    if oldhash == newhash { GARBLE_OK } else { GARBLE_ERR }
 }
 #[no_mangle] pub extern fn garble_circuit_from_file() {
     panic!("garble_circuit_from_file");
@@ -112,8 +117,19 @@ pub struct GarbleCircuit {
 #[no_mangle] pub extern fn garble_create_input_labels() {
     panic!("garble_create_input_labels");
 }
-#[no_mangle] pub extern fn garble_delete() {
-    panic!("garble_delete");
+#[no_mangle] pub extern fn garble_delete(gc: *mut GarbleCircuit) {
+    println!("garble_delete");
+    unsafe {
+        if let Some(gc) = gc.as_ref() {
+            // It's ok to call free on a null pointer, so omit the if's present in the C code
+            // man 3 free | grep -B1 'If ptr is NULL, no operation is performed.'
+            free(gc.gates as _);
+            free(gc.table as _);
+            free(gc.wires as _);
+            free(gc.outputs as _);
+            free(gc.output_perms as _);
+        }
+    }
 }
 
 #[no_mangle] pub extern fn garble_eval(gc: *const GarbleCircuit, input_labels: *const Block, output_labels: *mut Block, outputs: *mut bool) -> c_int {
@@ -274,6 +290,7 @@ fn garble_table_size(gc: *const GarbleCircuit) -> usize {
 
     gc.global_key = garble_random_block();
     aes_set_encrypt_key(gc.global_key, &mut key);
+    println!("global_key: {:?}\nkey: {:?}", gc.global_key, key);
 
     match gc.ty {
         GarbleType::Standard => garble_standard(gc, &key, delta),
@@ -312,6 +329,7 @@ fn garble_gate_standard(ty: u8,
             *out0 = a0 ^ b0;
             *out1 = *out0 ^ delta;
         }
+        //println!("garble_gate_standard: {}: XOR", idx);
     } else {
         let tweak = block_from_u64x2(0, idx as u64);
         let lsb0 = (a0.extract(0) & 1) as isize;
@@ -346,19 +364,28 @@ fn garble_gate_standard(ty: u8,
             label1,
         ];
 
+        let mut diagnostic = [false; 4];
         unsafe {
             if 2*lsb0 + lsb1 != 0 {
                 *table.offset(2*lsb0 + lsb1 -1) = blocks[0] ^ mask[0];
+                diagnostic[0] = true;
             }
             if 2*lsb0 + (1-lsb1) != 0 {
                 *table.offset(2*lsb0 + (1-lsb1)-1) = blocks[1] ^ mask[1];
+                diagnostic[1] = true;
             }
             if 2*(1-lsb0) + lsb1 != 0 {
                 *table.offset(2*(1-lsb0) + lsb1-1) = blocks[2] ^ mask[2];
+                diagnostic[2] = true;
             }
             if 2*(1-lsb0) + (1-lsb1) != 0 {
                 *table.offset(2*(1-lsb0) + (1-lsb1)-1) = blocks[3] ^ mask[3];
+                diagnostic[3] = true;
             }
+        }
+        let diagnostic_sum = diagnostic.iter().filter(|b| **b).map(|_| 1).sum::<u8>();
+        if diagnostic_sum != 3 {
+            println!("garble_gate_standard: {}: {:?}: {}", idx, diagnostic, diagnostic_sum);
         }
     }
 }
@@ -388,8 +415,8 @@ fn garble_privacyfree(gc: &mut GarbleCircuit, key: &AesKey, delta: Block) {
     panic!("garble_privacyfree");
 }
 
+const SHA_DIGEST_LENGTH: usize = 20;
 #[no_mangle] pub extern fn garble_hash(gc: *const GarbleCircuit, hash_dest: *mut u8) {
-    static SHA_DIGEST_LENGTH: usize = 20;
     if let Some(gc) = unsafe { gc.as_ref() } {
         let table_bytes = unsafe { mem::transmute::<*mut Block, *mut u8>(gc.table) };
         let table_slice = unsafe { slice::from_raw_parts(table_bytes, gc.q * garble_table_size(gc)) };
@@ -448,7 +475,6 @@ fn garble_privacyfree(gc: &mut GarbleCircuit, key: &AesKey, delta: Block) {
 #[no_mangle]
 #[inline]
 pub extern fn garble_random_block() -> Block {
-    println!("garble_random_block");
     let current_rand_index = unsafe { CURRENT_RAND_INDEX.as_mut() };
     let rand_aes_key = unsafe { RAND_AES_KEY.as_mut() };
     *current_rand_index += 1;
