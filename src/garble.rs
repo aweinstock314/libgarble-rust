@@ -357,6 +357,8 @@ fn garble_gate_standard(ty: u8,
             *out0 = label0;
             *out1 = label1;
         }
+        // TODO: it looks like an AND gate is hardcoded here, generalize to support arbitrary gates
+        assert_eq!(ty, GARBLE_GATE_AND);
         let blocks = [
             label0,
             label0,
