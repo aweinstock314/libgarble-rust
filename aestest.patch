@@ -1,0 +1,67 @@
+diff --git a/test/aes.c b/test/aes.c
+index 763b55d..4d73f0f 100644
+--- a/test/aes.c
++++ b/test/aes.c
+@@ -19,6 +19,45 @@ static const int roundLimit = 10;
+ static const int n = 128 * (10 + 1);
+ static const int m = 128;
+ 
++static void print_block(const block b) {
++    size_t i;
++    const unsigned char *c = (const unsigned char*)(&b);
++    for(i=0; i<sizeof b; i++) {
++        printf("%02x", c[i]);
++    }
++}
++
++static void prettyprint_gc(const garble_circuit *gc) {
++    size_t i;
++    printf("GarbleCircuit { n: %lu, m: %lu, q: %lu, r: %lu, ty: %d, gates: [", gc->n, gc->m, gc->q, gc->r, gc->type);
++    for(i=0; i<gc->q; i++) {
++        printf("GarbleGate(%x, %lu, %lu, %lu)%s", gc->gates[i].type, gc->gates[i].input0, gc->gates[i].input1, gc->gates[i].output, i == gc->q-1 ? "]" : ", ");
++    }
++    printf(", table: [");
++    for(i=0; i<gc->q; i++) {
++        print_block(gc->table[i]);
++        printf("%s", i == gc->q-1 ? "]" : ", ");
++    }
++    printf(", wires: [");
++    for(i=0; i<2*gc->r; i++) {
++        print_block(gc->wires[i]);
++        printf("%s", i == 2*gc->r-1 ? "]" : ", ");
++    }
++    printf(", outputs: [");
++    for(i=0; i<gc->m; i++) {
++        printf("%d%s", gc->outputs[i], i == gc->m-1 ? "]" : ", ");
++    }
++    printf(", output_perms: [");
++    for(i=0; i<gc->m; i++) {
++        printf("%d%s", gc->output_perms[i], i == gc->m-1 ? "]" : ", ");
++    }
++    printf(", fixed_label: ");
++    print_block(gc->fixed_label);
++    printf(", global_key: ");
++    print_block(gc->global_key);
++    printf("}\n");
++}
++
+ static void
+ build(garble_circuit *gc, garble_type_e type)
+ {
+@@ -88,10 +127,16 @@ run(garble_type_e type)
+ 
+     build(&gc, type);
+ 
++#ifndef RANDOMIZE_SEED
++    memcpy(&seed, "0123456789ABCDEF", 16);
++    seed = garble_seed(&seed);
++#else
+     seed = garble_seed(NULL);
++#endif
+     garble_garble(&gc, NULL, outputMap);
+     memcpy(inputLabels, gc.wires, 2 * gc.n * sizeof(block));
+     garble_hash(&gc, hash);
++    prettyprint_gc(&gc);
+ 
+     {
+         block *computedOutputMap = garble_allocate_blocks(m);
