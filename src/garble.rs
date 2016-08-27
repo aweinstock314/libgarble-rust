@@ -32,12 +32,12 @@ fn block_clearlsb(x: Block) -> Block {
 
 #[inline]
 fn double_xmm(mut x: Block) -> Block {
-    unsafe { asm!("psllq $$1, $0" : "=x"(x) : "x"(x)); }
+    unsafe { asm!("psllq $$1, $0" : "=x"(x) : "0"(x)); }
     x
 }
 #[inline]
 fn quadruple_xmm(mut x: Block) -> Block {
-    unsafe { asm!("psllq $$2, $0" : "=x"(x) : "x"(x)); }
+    unsafe { asm!("psllq $$2, $0" : "=x"(x) : "0"(x)); }
     x
 }
 
@@ -557,13 +557,13 @@ fn aes_ecb_encrypt_blocks(blocks: &mut [Block], key: &AesKey) {
     for j in 1..ROUNDS {
         for b in blocks.iter_mut() {
             unsafe {
-                asm!("aesenc $1, $0" : "=x"(*b) : "x"(key.rd_key[j]), "x"(*b));
+                asm!("aesenc $1, $0" : "=x"(*b) : "x"(key.rd_key[j]), "0"(*b));
             }
         }
     }
     for b in blocks.iter_mut() {
         unsafe {
-            asm!("aesenclast $1, $0" : "=x"(*b) : "x"(key.rd_key[ROUNDS]), "x"(*b));
+            asm!("aesenclast $1, $0" : "=x"(*b) : "x"(key.rd_key[ROUNDS]), "0"(*b));
         }
     }
 }
@@ -596,9 +596,10 @@ fn aes_ecb_encrypt_blocks(blocks: &mut [Block], key: &AesKey) {
 }
 
 /*
->>> a = '9d2cda901b682d3359709a5ab2419624'.decode('hex')
->>> import struct
->>> struct.unpack(16*"B", a)
+>>> expected = __import__('Crypto').Cipher.AES.new('0123456789ABCDEF').encrypt("\0"*16)
+>>> expected.encode('hex')
+'9d2cda901b682d3359709a5ab2419624'
+>>> __import__('struct').unpack(16*"B", expected)
 (157, 44, 218, 144, 27, 104, 45, 51, 89, 112, 154, 90, 178, 65, 150, 36)
 */
 #[test]
