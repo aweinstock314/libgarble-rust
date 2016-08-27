@@ -479,7 +479,6 @@ const SHA_DIGEST_LENGTH: usize = 20;
 pub extern fn garble_random_block() -> Block {
     let current_rand_index = unsafe { CURRENT_RAND_INDEX.as_mut() };
     let rand_aes_key = unsafe { RAND_AES_KEY.as_mut() };
-    *current_rand_index += 1;
 
     //let mut tmp = [0u8;16];
     // All 3 of these compile down to the exact same assembly
@@ -491,6 +490,9 @@ pub extern fn garble_random_block() -> Block {
     // This manages to be even more efficient (mov from rcx to xmm0 instead of spilling to the stack)
     let mut out = [block_from_u64x2(*current_rand_index, 0)];
     aes_ecb_encrypt_blocks(&mut out, rand_aes_key);
+
+    *current_rand_index += 1;
+
     out[0]
 }
 
