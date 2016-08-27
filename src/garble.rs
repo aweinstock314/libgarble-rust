@@ -3,7 +3,6 @@ use libc::{c_int, c_void, calloc, free, posix_memalign};
 use openssl::crypto::hash;
 use openssl_sys::RAND_bytes;
 use simd::u8x16;
-use std::cell::UnsafeCell;
 use std::{mem, ptr, slice};
 
 type Block = u8x16;
@@ -477,8 +476,8 @@ const SHA_DIGEST_LENGTH: usize = 20;
 #[no_mangle]
 #[inline]
 pub extern fn garble_random_block() -> Block {
-    let current_rand_index = unsafe { CURRENT_RAND_INDEX.as_mut() };
-    let rand_aes_key = unsafe { RAND_AES_KEY.as_mut() };
+    let current_rand_index = unsafe { &mut CURRENT_RAND_INDEX };
+    let rand_aes_key = unsafe { &mut RAND_AES_KEY };
 
     //let mut tmp = [0u8;16];
     // All 3 of these compile down to the exact same assembly
@@ -505,21 +504,9 @@ struct AesKey {
     rd_key: [Block; 11],
     rounds: usize
 }
-struct GlobalWrapper<T>(UnsafeCell<T>);
-impl<T> GlobalWrapper<T> {
-    unsafe fn as_mut(&self) -> &mut T {
-        // unwrap is sound here since an UnsafeCell's inner pointer is never null
-        // (unsynchronized global mutable variables are still thread-unsafe)
-        self.0.get().as_mut().unwrap()
-    }
-}
-unsafe impl<T> Sync for GlobalWrapper<T> {}
 
-// unsafe global variable for compatibility with the C library
-static RAND_AES_KEY: GlobalWrapper<AesKey> = GlobalWrapper(UnsafeCell::new(
-    AesKey { rd_key: [Block::splat(0); 11], rounds: 0 }
-));
-static CURRENT_RAND_INDEX: GlobalWrapper<u64> = GlobalWrapper(UnsafeCell::new(0));
+static mut RAND_AES_KEY: AesKey = AesKey { rd_key: [Block::splat(0); 11], rounds: 0 };
+static mut CURRENT_RAND_INDEX: u64 = 0;
 
 fn aes_set_encrypt_key(userkey: Block, key: &mut AesKey) {
     macro_rules! expand_assist {
@@ -585,7 +572,7 @@ fn aes_ecb_encrypt_blocks(blocks: &mut [Block], key: &AesKey) {
     println!("garble_seed({:p})", seed);
     let mut cur_seed: Block = unsafe { mem::uninitialized() };
     unsafe {
-        *CURRENT_RAND_INDEX.as_mut() = 0;
+        CURRENT_RAND_INDEX = 0;
     }
     match unsafe { seed.as_mut() } {
         Some(seed) => { cur_seed = *seed; }
@@ -596,7 +583,7 @@ fn aes_ecb_encrypt_blocks(blocks: &mut [Block], key: &AesKey) {
             }
         }
     }
-    let aes: &mut AesKey = unsafe { RAND_AES_KEY.as_mut() };
+    let aes: &mut AesKey = unsafe { &mut RAND_AES_KEY };
     aes_set_encrypt_key(cur_seed, aes);
     println!("seeded: {:?}", aes);
     cur_seed
@@ -606,4 +593,24 @@ fn aes_ecb_encrypt_blocks(blocks: &mut [Block], key: &AesKey) {
 }
 #[no_mangle] pub extern fn garble_to_buffer() {
     panic!("garble_to_buffer");
+}
+
+/*
+>>> a = '9d2cda901b682d3359709a5ab2419624'.decode('hex')
+>>> import struct
+>>> struct.unpack(16*"B", a)
+(157, 44, 218, 144, 27, 104, 45, 51, 89, 112, 154, 90, 178, 65, 150, 36)
+*/
+#[test]
+fn test_garblerandomblock() {
+    let mut seed = Block::new(b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'A', b'B', b'C', b'D', b'E', b'F');
+    garble_seed(&mut seed as _);
+    let a = garble_random_block();
+    println!("a: {:?}", a);
+    assert!(a.eq(Block::new(157, 44, 218, 144, 27, 104, 45, 51, 89, 112, 154, 90, 178, 65, 150, 36)).all());
+    garble_seed(&mut seed as _);
+    let b = garble_create_delta();
+    println!("b: {:?}", b);
+    assert!(b.eq(Block::new(157, 44, 218, 144, 27, 104, 45, 51, 89, 112, 154, 90, 178, 65, 150, 36)).all());
+    assert!(seed.eq(Block::new(b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'A', b'B', b'C', b'D', b'E', b'F')).all());
 }
