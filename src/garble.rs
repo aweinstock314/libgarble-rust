@@ -117,7 +117,7 @@ pub struct GarbleCircuit {
     panic!("garble_create_input_labels");
 }
 #[no_mangle] pub extern fn garble_delete(gc: *mut GarbleCircuit) {
-    println!("garble_delete");
+    //println!("garble_delete");
     unsafe {
         if let Some(gc) = gc.as_ref() {
             // It's ok to call free on a null pointer, so omit the if's present in the C code
@@ -227,7 +227,26 @@ fn eval_gate_halfgates(ty: u8, a: Block, b: Block, out: &mut Block, table: *cons
     }
 }
 fn eval_gate_privacyfree(ty: u8, a: Block, b: Block, out: &mut Block, table: *const Block, idx: isize, key: &AesKey) {
-    panic!("eval_gate_privacyfree");
+    if ty == GARBLE_GATE_XOR {
+        *out = a ^ b;
+    } else {
+        let idx = idx as u64;
+        let sa = (a.extract(0) & 1) == 1;
+        let tweak = block_from_u64x2(0, 2*idx);
+
+        let mut tmp = [double_xmm(a) ^ tweak];
+        let mask = tmp.clone();
+        aes_ecb_encrypt_blocks(&mut tmp, key);
+        let ha = tmp[0] ^ mask[0];
+
+        let w = if sa {
+                block_setlsb(ha) ^ unsafe { *table.offset(0) } ^ b
+            } else {
+                block_clearlsb(ha)
+            };
+
+        *out = w;
+    }
 }
 
 #[no_mangle] pub extern fn garble_extract_labels(extracted_labels: *mut Block, labels: *const Block, bits: *const bool, n: usize) {
@@ -354,6 +373,7 @@ fn garble_loop<F>(garble_gate: F, gc: &mut GarbleCircuit, key: &AesKey, delta: B
         let i = i as isize;
         unsafe {
             let g: &mut GarbleGate = gc.gates.offset(i).as_mut().unwrap();
+            assert!(g.ty == GARBLE_GATE_XOR || g.ty == GARBLE_GATE_AND);
             garble_gate(g.ty,
                 *gc.wires.offset(2 * (g.in0 as isize)),
                 *gc.wires.offset(2 * (g.in0 as isize) + 1),
@@ -439,7 +459,7 @@ fn garble_gate_standard(ty: u8,
 }
 
 fn garble_gate_halfgates(ty: u8,
-    mut a0: Block, mut a1: Block, mut b0: Block, mut b1: Block,
+    a0: Block, a1: Block, b0: Block, b1: Block,
     out0: *mut Block, out1: *mut Block,
     delta: Block, table: *mut Block, idx: isize, key: &AesKey) {
     if ty == GARBLE_GATE_XOR {
@@ -484,10 +504,34 @@ fn garble_gate_halfgates(ty: u8,
 }
 
 fn garble_gate_privacyfree(ty: u8,
-    mut a0: Block, mut a1: Block, mut b0: Block, mut b1: Block,
+    a0: Block, a1: Block, b0: Block, _: Block,
     out0: *mut Block, out1: *mut Block,
     delta: Block, table: *mut Block, idx: isize, key: &AesKey) {
-    panic!("garble_gate_privacyfree");
+    if ty == GARBLE_GATE_XOR {
+        unsafe {
+            *out0 = a0 ^ b0;
+            *out1 = *out0 ^ delta;
+        }
+    } else {
+        if a0.extract(0) & 1 == 1 || b0.extract(0) & 1 == 1 || a1.extract(0) & 1 == 0 {
+            panic!("privacyfree invalid lsb: {}: {:?} {:?} {:?}", idx, a0, b0, a1);
+        }
+        let idx = idx as u64;
+        let tweak = block_from_u64x2(0, 2*idx);
+
+        let mut keys = [double_xmm(a0) ^ tweak, double_xmm(a1) ^ tweak];
+        let masks = keys.clone();
+        aes_ecb_encrypt_blocks(&mut keys, key);
+        let ha0 = block_clearlsb(keys[0] ^ masks[0]);
+        let ha1 = block_setlsb(keys[1] ^ masks[1]);
+
+        let tmp = ha0 ^ ha1;
+        unsafe {
+            *table.offset(0) = tmp ^ b0;
+            *out0 = ha0;
+            *out1 = ha0 ^ delta;
+        }
+    }
 }
 
 const SHA_DIGEST_LENGTH: usize = 20;
@@ -496,7 +540,7 @@ const SHA_DIGEST_LENGTH: usize = 20;
         let table_bytes = unsafe { mem::transmute::<*mut Block, *mut u8>(gc.table) };
         let table_slice = unsafe { slice::from_raw_parts(table_bytes, gc.q * garble_table_size(gc)) };
         let result = hash::hash(hash::Type::SHA1, table_slice).expect("garble_hash: sha1 failed");
-        println!("garble_hash({:?}) = {:?}", gc, result);
+        //println!("garble_hash({:?}) = {:?}", gc, result);
         unsafe { ptr::copy(result.as_ptr(), hash_dest, SHA_DIGEST_LENGTH) };
     } else {
         println!("garble_hash(NULL)");
@@ -506,7 +550,7 @@ const SHA_DIGEST_LENGTH: usize = 20;
     panic!("garble_load");
 }
 #[no_mangle] pub extern fn garble_map_outputs(output_labels: *const Block, map: *const Block, vals: *mut bool, m: usize) -> c_int {
-    println!("garble_map_outputs({:p}, {:p}, {:p}, {})", output_labels, map, vals, m);
+    //println!("garble_map_outputs({:p}, {:p}, {:p}, {})", output_labels, map, vals, m);
     let (output_labels, map, vals) = unsafe {(
         slice::from_raw_parts(output_labels, 2*m),
         slice::from_raw_parts(map, m),
@@ -527,7 +571,7 @@ const SHA_DIGEST_LENGTH: usize = 20;
     GARBLE_OK
 }
 #[no_mangle] pub extern fn garble_new(gc: *mut GarbleCircuit, n: usize, m: usize, ty: GarbleType) -> c_int {
-    println!("garble_new({:p}, {}, {}, {:?})", gc, n, m, ty);
+    //println!("garble_new({:p}, {}, {}, {:?})", gc, n, m, ty);
     match unsafe { gc.as_mut() } {
         None => { GARBLE_ERR }
         Some(mut gc) => {
@@ -541,7 +585,7 @@ const SHA_DIGEST_LENGTH: usize = 20;
             gc.m = m;
             gc.q = 0;
             gc.r = 0;
-            println!("returning {:?}", gc);
+            //println!("returning {:?}", gc);
             GARBLE_OK
         }
     }
@@ -643,7 +687,7 @@ fn aes_ecb_encrypt_blocks(blocks: &mut [Block], key: &AesKey) {
 }
 
 #[no_mangle] pub extern fn garble_seed(seed: *mut Block) -> Block {
-    println!("garble_seed({:p})", seed);
+    //println!("garble_seed({:p})", seed);
     let mut cur_seed: Block = unsafe { mem::uninitialized() };
     unsafe {
         CURRENT_RAND_INDEX = 0;
@@ -659,7 +703,7 @@ fn aes_ecb_encrypt_blocks(blocks: &mut [Block], key: &AesKey) {
     }
     let aes: &mut AesKey = unsafe { &mut RAND_AES_KEY };
     aes_set_encrypt_key(cur_seed, aes);
-    println!("seeded: {:?}", aes);
+    //println!("seeded: {:?}", aes);
     cur_seed
 }
 #[no_mangle] pub extern fn garble_size() {
