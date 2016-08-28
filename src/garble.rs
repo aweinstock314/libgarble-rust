@@ -226,12 +226,19 @@ fn eval_gate_standard(ty: u8, a: Block, b: Block, out: &mut Block, table: *const
 }
 
 #[inline]
+fn garble_table_multiplier(ty: GarbleType) -> usize {
+    match ty {
+        GarbleType::Standard => 3,
+        GarbleType::HalfGates => 2,
+        GarbleType::PrivacyFree => 1,
+    }
+}
+
+#[inline]
 fn garble_table_size(gc: *const GarbleCircuit) -> usize {
     match unsafe { gc.as_ref().map(|gc| gc.ty) } {
         None => 0,
-        Some(GarbleType::Standard) => 3 * mem::size_of::<Block>(),
-        Some(GarbleType::HalfGates) => 2 * mem::size_of::<Block>(),
-        Some(GarbleType::PrivacyFree) => mem::size_of::<Block>(),
+        Some(ty) => garble_table_multiplier(ty) * mem::size_of::<Block>(),
     }
 }
 
@@ -292,9 +299,9 @@ fn garble_table_size(gc: *const GarbleCircuit) -> usize {
     //println!("global_key: {:?}\nkey: {:?}", gc.global_key, key);
 
     match gc.ty {
-        GarbleType::Standard => garble_standard(gc, &key, delta),
-        GarbleType::HalfGates => garble_halfgates(gc, &key, delta),
-        GarbleType::PrivacyFree => garble_privacyfree(gc, &key, delta),
+        GarbleType::Standard => garble_loop(garble_gate_standard, gc, &key, delta),
+        GarbleType::HalfGates => garble_loop(garble_gate_halfgates, gc, &key, delta),
+        GarbleType::PrivacyFree => garble_loop(garble_gate_privacyfree, gc, &key, delta),
     }
 
     for i in 0..gc.m {
@@ -317,6 +324,25 @@ fn garble_table_size(gc: *const GarbleCircuit) -> usize {
     }
 
     GARBLE_OK
+}
+
+fn garble_loop<F>(garble_gate: F, gc: &mut GarbleCircuit, key: &AesKey, delta: Block) where
+    F: Fn(u8, Block, Block, Block, Block, *mut Block, *mut Block, Block, *mut Block, isize, &AesKey) {
+    let mult = garble_table_multiplier(gc.ty) as isize;
+    for i in 0..gc.q {
+        let i = i as isize;
+        unsafe {
+            let g: &mut GarbleGate = gc.gates.offset(i).as_mut().unwrap();
+            garble_gate(g.ty,
+                *gc.wires.offset(2 * (g.in0 as isize)),
+                *gc.wires.offset(2 * (g.in0 as isize) + 1),
+                *gc.wires.offset(2 * (g.in1 as isize)),
+                *gc.wires.offset(2 * (g.in1 as isize) + 1),
+                gc.wires.offset(2 * (g.out as isize)),
+                gc.wires.offset(2 * (g.out as isize) + 1),
+                delta, gc.table.offset(mult * i), i, key);
+        }
+    }
 }
 
 fn garble_gate_standard(ty: u8,
@@ -391,29 +417,18 @@ fn garble_gate_standard(ty: u8,
     }
 }
 
-fn garble_standard(gc: &mut GarbleCircuit, key: &AesKey, delta: Block) {
-    for i in 0..gc.q {
-        let i = i as isize;
-        unsafe {
-            let g: &mut GarbleGate = gc.gates.offset(i).as_mut().unwrap();
-            garble_gate_standard(g.ty,
-                *gc.wires.offset(2 * (g.in0 as isize)),
-                *gc.wires.offset(2 * (g.in0 as isize) + 1),
-                *gc.wires.offset(2 * (g.in1 as isize)),
-                *gc.wires.offset(2 * (g.in1 as isize) + 1),
-                gc.wires.offset(2 * (g.out as isize)),
-                gc.wires.offset(2 * (g.out as isize) + 1),
-                delta, gc.table.offset(3 * i), i, key);
-        }
-    }
+fn garble_gate_halfgates(ty: u8,
+    mut a0: Block, mut a1: Block, mut b0: Block, mut b1: Block,
+    out0: *mut Block, out1: *mut Block,
+    delta: Block, table: *mut Block, idx: isize, key: &AesKey) {
+    panic!("garble_gate_halfgates");
 }
-fn garble_halfgates(gc: &mut GarbleCircuit, key: &AesKey, delta: Block) {
-    let _ = (gc, key, delta); // warning suppression
-    panic!("garble_halfgates");
-}
-fn garble_privacyfree(gc: &mut GarbleCircuit, key: &AesKey, delta: Block) {
-    let _ = (gc, key, delta); // warning suppression
-    panic!("garble_privacyfree");
+
+fn garble_gate_privacyfree(ty: u8,
+    mut a0: Block, mut a1: Block, mut b0: Block, mut b1: Block,
+    out0: *mut Block, out1: *mut Block,
+    delta: Block, table: *mut Block, idx: isize, key: &AesKey) {
+    panic!("garble_gate_privacyfree");
 }
 
 const SHA_DIGEST_LENGTH: usize = 20;
