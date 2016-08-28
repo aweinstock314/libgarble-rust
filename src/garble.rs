@@ -143,9 +143,9 @@ pub struct GarbleCircuit {
     labels[gc.n+1] = block_setlsb(fixed_label);
 
     match gc.ty {
-        GarbleType::Standard => eval_standard(gc, labels, &key),
-        GarbleType::HalfGates => eval_halfgates(gc, labels, &key),
-        GarbleType::PrivacyFree => eval_privacyfree(gc, labels, &key),
+        GarbleType::Standard => eval_loop(eval_gate_standard, gc, labels, &key),
+        GarbleType::HalfGates => eval_loop(eval_gate_halfgates, gc, labels, &key),
+        GarbleType::PrivacyFree => eval_loop(eval_gate_privacyfree, gc, labels, &key),
     }
 
     let gc_outputs = unsafe { slice::from_raw_parts(gc.outputs, gc.m) };
@@ -170,27 +170,21 @@ pub struct GarbleCircuit {
     GARBLE_OK
 }
 
-fn eval_standard(gc: &GarbleCircuit, labels: &mut [Block], key: &AesKey) {
+fn eval_loop<F>(eval_gate: F, gc: &GarbleCircuit, labels: &mut [Block], key: &AesKey) where
+    F: Fn(u8, Block, Block, &mut Block, *const Block, isize, &AesKey) {
+    let mult = garble_table_multiplier(gc.ty) as isize;
     for i in 0..gc.q {
         let i = i as isize;
         unsafe {
             let g: &GarbleGate = gc.gates.offset(i).as_mut().unwrap();
-            eval_gate_standard(g.ty,
+            eval_gate(g.ty,
                 labels[g.in0],
                 labels[g.in1],
                 &mut labels[g.out],
-                gc.table.offset(3*i),
+                gc.table.offset(mult*i),
                 i, key);
         }
     }
-}
-fn eval_halfgates(gc: &GarbleCircuit, labels: &[Block], key: &AesKey) {
-    let _ = (gc, labels, key); // warning suppression
-    panic!("eval_halfgates");
-}
-fn eval_privacyfree(gc: &GarbleCircuit, labels: &[Block], key: &AesKey) {
-    let _ = (gc, labels, key); // warning suppression
-    panic!("eval_privacyfree");
 }
 
 fn eval_gate_standard(ty: u8, a: Block, b: Block, out: &mut Block, table: *const Block, idx: isize, key: &AesKey) {
@@ -207,6 +201,33 @@ fn eval_gate_standard(ty: u8, a: Block, b: Block, out: &mut Block, table: *const
         aes_ecb_encrypt_blocks(&mut val, key);
         *out = val[0] ^ tmp;
     }
+}
+fn eval_gate_halfgates(ty: u8, a: Block, b: Block, out: &mut Block, table: *const Block, idx: isize, key: &AesKey) {
+    if ty == GARBLE_GATE_XOR {
+        *out = a ^ b;
+    } else {
+        let idx = idx as u64;
+        let sa = (a.extract(0) & 1) == 1;
+        let sb = (b.extract(0) & 1) == 1;
+        let tweak1 = block_from_u64x2(0, 2*idx);
+        let tweak2 = block_from_u64x2(0, 2*idx+1);
+
+        let mut keys = [double_xmm(a) ^ tweak1, double_xmm(b) ^ tweak2];
+        let masks = keys.clone();
+        aes_ecb_encrypt_blocks(&mut keys, key);
+        let ha = keys[0] ^ masks[0];
+        let hb = keys[1] ^ masks[1];
+
+        let mut w = ha ^ hb;
+        unsafe {
+            if sa { w = w ^ *table.offset(0); }
+            if sb { w = w ^ *table.offset(1) ^ a; }
+            *out = w;
+        }
+    }
+}
+fn eval_gate_privacyfree(ty: u8, a: Block, b: Block, out: &mut Block, table: *const Block, idx: isize, key: &AesKey) {
+    panic!("eval_gate_privacyfree");
 }
 
 #[no_mangle] pub extern fn garble_extract_labels(extracted_labels: *mut Block, labels: *const Block, bits: *const bool, n: usize) {
@@ -421,7 +442,45 @@ fn garble_gate_halfgates(ty: u8,
     mut a0: Block, mut a1: Block, mut b0: Block, mut b1: Block,
     out0: *mut Block, out1: *mut Block,
     delta: Block, table: *mut Block, idx: isize, key: &AesKey) {
-    panic!("garble_gate_halfgates");
+    if ty == GARBLE_GATE_XOR {
+        unsafe {
+            *out0 = a0 ^ b0;
+            *out1 = *out0 ^ delta;
+        }
+    } else {
+        let idx = idx as u64;
+        let pa = (a0.extract(0) & 1) == 1;
+        let pb = (b0.extract(0) & 1) == 1;
+        let tweak1 = block_from_u64x2(0, 2*idx);
+        let tweak2 = block_from_u64x2(0, 2*idx+1);
+
+        let mut keys = [
+            double_xmm(a0) ^ tweak1,
+            double_xmm(a1) ^ tweak1,
+            double_xmm(b0) ^ tweak2,
+            double_xmm(b1) ^ tweak2,
+        ];
+        let masks = keys.clone();
+        aes_ecb_encrypt_blocks(&mut keys, key);
+        let ha0 = keys[0] ^ masks[0];
+        let ha1 = keys[1] ^ masks[1];
+        let hb0 = keys[2] ^ masks[2];
+        let hb1 = keys[3] ^ masks[3];
+
+        let mut w0 = ha0;
+        let tmp = hb0 ^ hb1;
+        unsafe {
+            *table.offset(0) = ha0 ^ ha1;
+            if pb { *table.offset(0) = *table.offset(0) ^ delta; }
+            if pa { w0 = w0 ^ *table.offset(0); }
+            *table.offset(1) = tmp ^ a0;
+            w0 = w0 ^ hb0;
+            if pb { w0 = w0 ^ tmp; }
+
+            *out0 = w0;
+            *out1 = *out0 ^ delta;
+        }
+    }
 }
 
 fn garble_gate_privacyfree(ty: u8,
