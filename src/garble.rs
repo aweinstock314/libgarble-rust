@@ -85,7 +85,7 @@ pub struct GarbleCircuit {
 #[no_mangle] pub extern fn garble_allocate_blocks(nblocks: usize) -> *mut Block {
     let mut blocks: *mut c_void = ptr::null_mut();
     let res = unsafe { posix_memalign(&mut blocks, mem::align_of::<Block>(), nblocks * mem::size_of::<Block>()) };
-    println!("garble_allocate_blocks({}): {}, {:p}", nblocks, res, blocks);
+    //println!("garble_allocate_blocks({}): {}, {:p}", nblocks, res, blocks);
     if res == 0 {
         blocks as *mut Block
     } else {
@@ -97,7 +97,7 @@ pub struct GarbleCircuit {
 #[no_mangle] pub extern fn garble_check(gc: *const GarbleCircuit, oldhash: *const u8) -> c_int {
     let gc = if let Some(gc) = unsafe { gc.as_ref() } { gc } else { return GARBLE_ERR; };
     let oldhash = unsafe { if let Some(oldhash) = oldhash.as_ref() { slice::from_raw_parts(oldhash, SHA_DIGEST_LENGTH) } else { return GARBLE_ERR; } };
-    println!("garble_check({:?}, {:?})", gc, oldhash);
+    //println!("garble_check({:?}, {:?})", gc, oldhash);
     let mut newhash = [0u8; SHA_DIGEST_LENGTH];
     garble_hash(gc, newhash.as_mut_ptr());
     if oldhash == newhash { GARBLE_OK } else { GARBLE_ERR }
@@ -109,7 +109,7 @@ pub struct GarbleCircuit {
     panic!("garble_circuit_to_file");
 }
 #[no_mangle] pub extern fn garble_create_delta() -> Block {
-    println!("garble_create_delta");
+    //println!("garble_create_delta");
     let delta = garble_random_block();
     block_setlsb(delta)
 }
@@ -132,7 +132,7 @@ pub struct GarbleCircuit {
 }
 
 #[no_mangle] pub extern fn garble_eval(gc: *const GarbleCircuit, input_labels: *const Block, output_labels: *mut Block, outputs: *mut bool) -> c_int {
-    println!("garble_eval({:p}, {:p}, {:p}, {:p})", gc, input_labels, output_labels, outputs);
+    //println!("garble_eval({:p}, {:p}, {:p}, {:p})", gc, input_labels, output_labels, outputs);
     let gc = if let Some(gc) = unsafe { gc.as_ref() } { gc } else { return GARBLE_ERR; };
     let mut key = unsafe { mem::uninitialized() };
     aes_set_encrypt_key(gc.global_key, &mut key);
@@ -210,7 +210,7 @@ fn eval_gate_standard(ty: u8, a: Block, b: Block, out: &mut Block, table: *const
 }
 
 #[no_mangle] pub extern fn garble_extract_labels(extracted_labels: *mut Block, labels: *const Block, bits: *const bool, n: usize) {
-    println!("garble_extract_labels({:p}, {:p}, {:p}, {})", extracted_labels, labels, bits, n);
+    //println!("garble_extract_labels({:p}, {:p}, {:p}, {})", extracted_labels, labels, bits, n);
     let (extracted_labels, labels, bits) = unsafe {(
         slice::from_raw_parts_mut(extracted_labels, n),
         slice::from_raw_parts(labels, 2*n),
@@ -236,7 +236,7 @@ fn garble_table_size(gc: *const GarbleCircuit) -> usize {
 }
 
 #[no_mangle] pub extern fn garble_garble(gc: *mut GarbleCircuit, input_labels: *const Block, output_labels: *mut Block) -> c_int {
-    println!("garble_garble");
+    //println!("garble_garble");
     let mut key: AesKey = unsafe { mem::uninitialized() };
     let delta: Block;
     let gc = if let Some(gc) = unsafe { gc.as_mut() } { gc } else { return GARBLE_ERR };
@@ -289,7 +289,7 @@ fn garble_table_size(gc: *const GarbleCircuit) -> usize {
 
     gc.global_key = garble_random_block();
     aes_set_encrypt_key(gc.global_key, &mut key);
-    println!("global_key: {:?}\nkey: {:?}", gc.global_key, key);
+    //println!("global_key: {:?}\nkey: {:?}", gc.global_key, key);
 
     match gc.ty {
         GarbleType::Standard => garble_standard(gc, &key, delta),
@@ -440,7 +440,7 @@ const SHA_DIGEST_LENGTH: usize = 20;
     )};
     for (i, (m, v)) in map.iter().zip(vals.iter_mut()).enumerate() {
         let out = [output_labels[2*i], output_labels[2*i+1]];
-        println!("{}: {:?}, {:?}, {:?}", i, *m, out[0], out[1]);
+        //println!("{}: {:?}, {:?}, {:?}", i, *m, out[0], out[1]);
         if block_equals(*m, out[0]) {
             *v = false;
         } else if block_equals(*m, out[1]) {
@@ -449,7 +449,7 @@ const SHA_DIGEST_LENGTH: usize = 20;
             return GARBLE_ERR;
         }
     }
-    println!("vals: {:?}", vals);
+    //println!("vals: {:?}", vals);
     GARBLE_OK
 }
 #[no_mangle] pub extern fn garble_new(gc: *mut GarbleCircuit, n: usize, m: usize, ty: GarbleType) -> c_int {
