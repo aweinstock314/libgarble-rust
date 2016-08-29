@@ -1,11 +1,25 @@
 use byteorder::{ByteOrder, LittleEndian};
 use libc::{c_int, c_void, calloc, free, posix_memalign};
+use llvmint::x86::{aesni_aesenc, aesni_aesenclast};
 use openssl::crypto::hash;
 use openssl_sys::RAND_bytes;
 use simd::u8x16;
+use simdty::i64x2;
 use std::{mem, ptr, slice};
 
 type Block = u8x16;
+
+#[inline]
+fn block_from_i64x2(x: i64x2) -> Block {
+    block_from_u64x2(x.0 as u64, x.1 as u64)
+}
+
+#[inline]
+fn i64x2_from_block(x: Block) -> i64x2 {
+    let mut tmp = [0u8; 16];
+    x.store(&mut tmp, 0);
+    i64x2(LittleEndian::read_i64(&tmp[0..8]), LittleEndian::read_i64(&tmp[8..16]))
+}
 
 #[inline]
 fn block_from_u64x2(lo: u64, hi: u64) -> Block {
@@ -675,13 +689,21 @@ fn aes_ecb_encrypt_blocks(blocks: &mut [Block], key: &AesKey) {
     for j in 1..ROUNDS {
         for b in blocks.iter_mut() {
             unsafe {
-                asm!("vaesenc $1, $0, $0" : "=x"(*b) : "x"(key.rd_key[j]), "0"(*b));
+                if let None = option_env!("LIBGARBLE_RS_USE_INTRINSICS") {
+                    asm!("vaesenc $1, $0, $0" : "=x"(*b) : "x"(key.rd_key[j]), "0"(*b));
+                } else {
+                    *b = block_from_i64x2(aesni_aesenc(i64x2_from_block(*b), i64x2_from_block(key.rd_key[j])));
+                }
             }
         }
     }
     for b in blocks.iter_mut() {
         unsafe {
-            asm!("vaesenclast $1, $0, $0" : "=x"(*b) : "x"(key.rd_key[ROUNDS]), "0"(*b));
+            if let None = option_env!("LIBGARBLE_RS_USE_INTRINSICS") {
+                asm!("vaesenclast $1, $0, $0" : "=x"(*b) : "x"(key.rd_key[ROUNDS]), "0"(*b));
+            } else {
+                *b = block_from_i64x2(aesni_aesenclast(i64x2_from_block(*b), i64x2_from_block(key.rd_key[ROUNDS])));
+            }
         }
     }
 }

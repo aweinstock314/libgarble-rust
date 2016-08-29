@@ -10,6 +10,8 @@ crate-type=["staticlib", "dylib"]
 [dependencies]
 byteorder = "0.5.3"
 libc = "0.2.15"
+llvmint = "0.0.2"
 openssl = "0.8.2"
 openssl-sys = "0.7.17"
 simd = { git = "https://github.com/huonw/simd" }
+simdty = "0.0.3"

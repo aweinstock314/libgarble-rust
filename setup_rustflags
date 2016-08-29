@@ -1,4 +1,4 @@
 # this is intended to be sourced, not run
 # options inverted from http://www.randomhacks.net/2015/11/11/bare-metal-rust-custom-target-kernel-space/
 # avx2 ommitted because it causes illegal instructions on the machine I'm testing with
-export RUSTFLAGS='-C target-feature=+mmx,+sse,+sse2,+sse3,+ssse3,+sse4.1,+sse4.2,+3dnow,+3dnowa,+avx'
+export RUSTFLAGS='-C target-feature=+mmx,+sse,+sse2,+sse3,+ssse3,+sse4.1,+sse4.2,+3dnow,+3dnowa,+avx,+aes'
