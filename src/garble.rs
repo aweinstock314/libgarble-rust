@@ -212,7 +212,7 @@ fn eval_gate_standard(ty: u8, a: Block, b: Block, out: &mut Block, table: *const
         let tweak = block_from_u64x2(0, idx as u64);
         let mut val = [ha ^ hb ^ tweak];
         let tmp = if lsb_a + lsb_b > 0 { unsafe { *table.offset(2*lsb_a + lsb_b - 1) ^ val[0] } } else { val[0] };
-        aes_ecb_encrypt_blocks(&mut val, key);
+        aes_ecb_encrypt_blocks::<AesniViaLLVM>(&mut val, key);
         *out = val[0] ^ tmp;
     }
 }
@@ -228,7 +228,7 @@ fn eval_gate_halfgates(ty: u8, a: Block, b: Block, out: &mut Block, table: *cons
 
         let mut keys = [double_xmm(a) ^ tweak1, double_xmm(b) ^ tweak2];
         let masks = keys.clone();
-        aes_ecb_encrypt_blocks(&mut keys, key);
+        aes_ecb_encrypt_blocks::<AesniViaAsm>(&mut keys, key);
         let ha = keys[0] ^ masks[0];
         let hb = keys[1] ^ masks[1];
 
@@ -250,7 +250,7 @@ fn eval_gate_privacyfree(ty: u8, a: Block, b: Block, out: &mut Block, table: *co
 
         let mut tmp = [double_xmm(a) ^ tweak];
         let mask = tmp.clone();
-        aes_ecb_encrypt_blocks(&mut tmp, key);
+        aes_ecb_encrypt_blocks::<AesniViaLLVM>(&mut tmp, key);
         let ha = tmp[0] ^ mask[0];
 
         let w = if sa {
@@ -425,7 +425,7 @@ fn garble_gate_standard(ty: u8,
             a1 ^ b1 ^ tweak,
         ];
         let mut mask = keys.clone();
-        aes_ecb_encrypt_blocks(&mut keys[0..4], key);
+        aes_ecb_encrypt_blocks::<AesniViaLLVM>(&mut keys[0..4], key);
         for (m,k) in mask.iter_mut().zip(keys.iter()) {
             *m = *m ^ *k;
         }
@@ -495,7 +495,7 @@ fn garble_gate_halfgates(ty: u8,
             double_xmm(b1) ^ tweak2,
         ];
         let masks = keys.clone();
-        aes_ecb_encrypt_blocks(&mut keys, key);
+        aes_ecb_encrypt_blocks::<AesniViaAsm>(&mut keys, key);
         let ha0 = keys[0] ^ masks[0];
         let ha1 = keys[1] ^ masks[1];
         let hb0 = keys[2] ^ masks[2];
@@ -535,7 +535,7 @@ fn garble_gate_privacyfree(ty: u8,
 
         let mut keys = [double_xmm(a0) ^ tweak, double_xmm(a1) ^ tweak];
         let masks = keys.clone();
-        aes_ecb_encrypt_blocks(&mut keys, key);
+        aes_ecb_encrypt_blocks::<AesniViaLLVM>(&mut keys, key);
         let ha0 = block_clearlsb(keys[0] ^ masks[0]);
         let ha1 = block_setlsb(keys[1] ^ masks[1]);
 
@@ -620,7 +620,7 @@ pub extern fn garble_random_block() -> Block {
 
     // This manages to be even more efficient (mov from rcx to xmm0 instead of spilling to the stack)
     let mut out = [block_from_u64x2(*current_rand_index, 0)];
-    aes_ecb_encrypt_blocks(&mut out, rand_aes_key);
+    aes_ecb_encrypt_blocks::<AesniViaLLVM>(&mut out, rand_aes_key);
 
     *current_rand_index += 1;
 
@@ -681,30 +681,46 @@ fn aes_set_encrypt_key(userkey: Block, key: &mut AesKey) {
     key.rounds = 10;
 }
 
-fn aes_ecb_encrypt_blocks(blocks: &mut [Block], key: &AesKey) {
+trait Aesni {
+    fn aesenc(block: Block, subkey: Block) -> Block;
+    fn aesenclast(block: Block, subkey: Block) -> Block;
+}
+
+struct AesniViaAsm;
+impl Aesni for AesniViaAsm {
+    fn aesenc(mut block: Block, subkey: Block) -> Block {
+        unsafe { asm!("vaesenc $1, $0, $0" : "=x"(block) : "x"(subkey), "0"(block)); }
+        block
+    }
+    fn aesenclast(mut block: Block, subkey: Block) -> Block {
+        unsafe { asm!("vaesenclast $1, $0, $0" : "=x"(block) : "x"(subkey), "0"(block)); }
+        block
+    }
+}
+
+struct AesniViaLLVM;
+impl Aesni for AesniViaLLVM {
+    fn aesenc(block: Block, subkey: Block) -> Block {
+        unsafe { block_from_i64x2(aesni_aesenc(i64x2_from_block(block), i64x2_from_block(subkey))) }
+    }
+    fn aesenclast(block: Block, subkey: Block) -> Block {
+        unsafe { block_from_i64x2(aesni_aesenclast(i64x2_from_block(block), i64x2_from_block(subkey))) }
+    }
+}
+
+#[inline]
+fn aes_ecb_encrypt_blocks<A: Aesni>(blocks: &mut [Block], key: &AesKey) {
     static ROUNDS: usize = 10;
     for b in blocks.iter_mut() {
         *b = *b ^ key.rd_key[0];
     }
     for j in 1..ROUNDS {
         for b in blocks.iter_mut() {
-            unsafe {
-                if let None = option_env!("LIBGARBLE_RS_USE_INTRINSICS") {
-                    asm!("vaesenc $1, $0, $0" : "=x"(*b) : "x"(key.rd_key[j]), "0"(*b));
-                } else {
-                    *b = block_from_i64x2(aesni_aesenc(i64x2_from_block(*b), i64x2_from_block(key.rd_key[j])));
-                }
-            }
+            *b = A::aesenc(*b, key.rd_key[j]);
         }
     }
     for b in blocks.iter_mut() {
-        unsafe {
-            if let None = option_env!("LIBGARBLE_RS_USE_INTRINSICS") {
-                asm!("vaesenclast $1, $0, $0" : "=x"(*b) : "x"(key.rd_key[ROUNDS]), "0"(*b));
-            } else {
-                *b = block_from_i64x2(aesni_aesenclast(i64x2_from_block(*b), i64x2_from_block(key.rd_key[ROUNDS])));
-            }
-        }
+        *b = A::aesenclast(*b, key.rd_key[ROUNDS]);
     }
 }
 
