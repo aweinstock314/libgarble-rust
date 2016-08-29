@@ -675,13 +675,13 @@ fn aes_ecb_encrypt_blocks(blocks: &mut [Block], key: &AesKey) {
     for j in 1..ROUNDS {
         for b in blocks.iter_mut() {
             unsafe {
-                asm!("aesenc $1, $0" : "=x"(*b) : "x"(key.rd_key[j]), "0"(*b));
+                asm!("vaesenc $1, $0, $0" : "=x"(*b) : "x"(key.rd_key[j]), "0"(*b));
             }
         }
     }
     for b in blocks.iter_mut() {
         unsafe {
-            asm!("aesenclast $1, $0" : "=x"(*b) : "x"(key.rd_key[ROUNDS]), "0"(*b));
+            asm!("vaesenclast $1, $0, $0" : "=x"(*b) : "x"(key.rd_key[ROUNDS]), "0"(*b));
         }
     }
 }
