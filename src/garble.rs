@@ -442,28 +442,11 @@ fn garble_gate_standard(ty: u8,
             label1,
         ];
 
-        let mut diagnostic = [false; 4];
         unsafe {
-            if 2*lsb0 + lsb1 != 0 {
-                *table.offset(2*lsb0 + lsb1 -1) = blocks[0] ^ mask[0];
-                diagnostic[0] = true;
-            }
-            if 2*lsb0 + (1-lsb1) != 0 {
-                *table.offset(2*lsb0 + (1-lsb1)-1) = blocks[1] ^ mask[1];
-                diagnostic[1] = true;
-            }
-            if 2*(1-lsb0) + lsb1 != 0 {
-                *table.offset(2*(1-lsb0) + lsb1-1) = blocks[2] ^ mask[2];
-                diagnostic[2] = true;
-            }
-            if 2*(1-lsb0) + (1-lsb1) != 0 {
-                *table.offset(2*(1-lsb0) + (1-lsb1)-1) = blocks[3] ^ mask[3];
-                diagnostic[3] = true;
-            }
-        }
-        let diagnostic_sum = diagnostic.iter().filter(|b| **b).map(|_| 1).sum::<u8>();
-        if diagnostic_sum != 3 {
-            println!("garble_gate_standard: {}: {:?}: {}", idx, diagnostic, diagnostic_sum);
+            if 2*   lsb0  +    lsb1  != 0 { *table.offset(2*   lsb0  +    lsb1 -1) = blocks[0] ^ mask[0]; }
+            if 2*   lsb0  + (1-lsb1) != 0 { *table.offset(2*   lsb0  + (1-lsb1)-1) = blocks[1] ^ mask[1]; }
+            if 2*(1-lsb0) +    lsb1  != 0 { *table.offset(2*(1-lsb0) +    lsb1 -1) = blocks[2] ^ mask[2]; }
+            if 2*(1-lsb0) + (1-lsb1) != 0 { *table.offset(2*(1-lsb0) + (1-lsb1)-1) = blocks[3] ^ mask[3]; }
         }
     }
 }
