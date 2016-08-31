@@ -385,7 +385,7 @@ fn garble_loop<F>(garble_gate: F, gc: &mut GarbleCircuit, key: &AesKey, delta: B
     for i in 0..gc.q {
         let i = i as isize;
         unsafe {
-            let g: &mut GarbleGate = gc.gates.offset(i).as_mut().unwrap();
+            let g: &mut GarbleGate = &mut *gc.gates.offset(i);
             assert!(g.ty == GARBLE_GATE_XOR || g.ty == GARBLE_GATE_AND);
             garble_gate(g.ty,
                 *gc.wires.offset(2 * (g.in0 as isize)),
