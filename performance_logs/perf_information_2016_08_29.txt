@@ -1,0 +1,140 @@
+C version (gcc):
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [7429ca00342a00c4a7dfb62d7f4c5e4c, 83598ef4e8392a619ab51754e9fb78f4, ec5a90f71435d036f1a1b9c893e6ec3a, 1b2ad403c826fa93cccb18b10551ca82, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 0, 0, 1, ...], fixed_label: c3b3f337a4d8c1b956e78a7a26db93cd, global_key: ef29766f6e241c354680147ecc489e4a}
+28.745911 13.823254
+4.464842 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [b9fb79641e0066ac2621b7b3b76a7ce0, 7859b0a48bbb22b4c01356da1c021722, 75ef6dd98137b5f279072c29a04d4aa1, b44da419148cf1ea9f35cd400b252163, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 0, 1, 0, ...], fixed_label: eb3e21367974d52a6219039cd5fee914, global_key: 431b91921b54f65a9c5c2ea5bc258ff2}
+24.704535 16.782802
+4.405740 s
+Type: Privacy free
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 2, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [4440443ff71349b6dda41c2284b2b827, 051246e4f7e9477f0c17a937629921cd, fab4793eae3e326a31ba0d84a2103188, bbe67be5aec43ca3e009b891443ba862, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: ad5e7e3496dad66b569ecbbd36cf17e8, global_key: 12d5b18360e51b6a00c936d43880996a}
+19.411797 13.457765
+3.476366 s
+-----
+Rust (inline assembly):
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [6160c3140a4b65291a6d65d83f9b66e3, 4682392214449bb94a4e9a2b2677234e, 6cba05f3fa9e4f87f2141dcfdbd8d6de, 4b58ffc5e491b117a237e23cc2349373, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: 3dfc3bf2853ddb2d493b36b809f1cb9b, global_key: c9300d51659b4e0d2816b5817439a187}
+33.456692 12.686829
+4.833461 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [856ee9793a1bab90971bc23b60b93ffe, e6a493bd937758f7f262d377c892392f, 319a803bbfb3946f9a470b5f078d03d8, 5250faff16df6708ff3e1a13afa60509, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 0, 0, 1, ...], fixed_label: 5d7a81782d60f49261681831c701dcc3, global_key: d730bf686fe14406ff595335a02c7717}
+24.131622 15.449673
+4.200825 s
+Type: Privacy free
+thread '<unnamed>' panicked at 'privacyfree invalid lsb: 3830: u8x16(177, 121, 13, 13, 171, 207, 154, 189, 159, 18, 236, 166, 112, 200, 163, 186) u8x16(90, 171, 74, 52, 38, 200, 196, 153, 216, 116, 45, 161, 170, 126, 144, 213) u8x16(250, 247, 102, 54, 124, 115, 87, 249, 145, 243, 3, 91, 150, 0, 179, 164)', src/garble.rs:531
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+fatal runtime error: failed to initiate panic, error 5
+Aborted
+-----
+Rust (LLVM intrinsics):
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [dbf776c5a548dd4078a3eb0f27a68d69, 9232240d41852cfb662c82762fd97227, d4f5ed1b037b1db7a795c28b4a5ad8a9, 9d30bfd3e7b6ec0cb91aabf2422527e7, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 1, 1, 0, ...], fixed_label: 5808cea8075ed0e9f805015dfad37f64, global_key: ee6dda9b61fb22977862fd0bcd5a3328}
+32.881320 12.469793
+4.735957 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [9dec8965193954abd2d4437929409e0f, 9693a59fb89b4c4582273321b21f6e58, 52d8eed913a26878623c178716ef058b, 59a7c223b200709632cf67df8db0f5dc, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 1, 0, 0, ...], fixed_label: 193ee67b244e8d64a61b7d0283ee28af, global_key: 971f38c829e99e69e53cbff00ec16fd9}
+24.453861 17.764546
+4.507092 s
+Type: Privacy free
+thread '<unnamed>' panicked at 'privacyfree invalid lsb: 3830: u8x16(67, 48, 61, 247, 59, 190, 63, 135, 187, 215, 89, 163, 151, 120, 236, 104) u8x16(88, 9, 220, 53, 95, 238, 242, 164, 181, 244, 52, 6, 69, 121, 228, 107) u8x16(170, 255, 242, 98, 67, 138, 8, 113, 60, 110, 227, 51, 248, 138, 176, 43)', src/garble.rs:531
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+fatal runtime error: failed to initiate panic, error 5
+Aborted
+-----
+Rust (Mixed aes instructions):
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [bbed867df11f11d90b096676eebb4026, 84c7aab76b2839a594388cdf05efcf7e, dcec86cf4f29222727281852be884263, e3c6aa05d51e0a5bb819f2fb55dccd3b, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 1, 1, 1, ...], fixed_label: 19ce4dd89d1adb3ba3e95d24d4f23bb2, global_key: a20d8529bd802d29926a102d8e268c93}
+33.092561 12.883879
+4.772452 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [b8e2bd4a654f039a31ff30e820c38377, db17bae5920dd2bc546378c868d175b7, 64f0bc9e48b6fe8f7302766f89e4806d, 0705bb31bff42fa9169e3e4fc1f676ad, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 1, 0, 0, ...], fixed_label: 356d7c2a2eb57af628951adebc9cd6cd, global_key: 23e8e62718dbcf174b73c8dc35396be3}
+24.341677 15.405099
+4.223400 s
+Type: Privacy free
+thread '<unnamed>' panicked at 'privacyfree invalid lsb: 3830: u8x16(63, 163, 7, 77, 102, 3, 47, 142, 249, 13, 61, 250, 146, 122, 90, 147) u8x16(130, 220, 1, 145, 191, 238, 56, 35, 234, 158, 75, 177, 93, 53, 38, 61) u8x16(226, 203, 173, 191, 199, 28, 45, 218, 71, 55, 83, 200, 230, 15, 124, 174)', src/garble.rs:531
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+fatal runtime error: failed to initiate panic, error 5
+Aborted
+-----
+C version (CC=clang ./configure --with-msgpack=no):
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes 
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [95673e40c034c0c8363e15953a6ec85e, fa631a2755b0a91f4f2ac7626b7072dd, 37672f48af7959345ba2b9e9a83ac432, 58630b2f3afd30e322b66b1ef9247eb1, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 1, 0, 0, ...], fixed_label: 8617f0a2e81acd99ff3f4aef48cf7887, global_key: feaac5a1e745083416059522ad08e768}
+28.914702 13.940187
+4.507464 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [3de28fe2569a86e7ac16cbcd66e14d0c, fce1b62ec2e3e4d33281042d23a656ee, ab8ab6cdac6ae952f7cf8371e3d44320, 6a898f0138138b6669584c91a69358c2, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 0, 0, 0, ...], fixed_label: 544de83fd3673e2557bfd5a2224d7227, global_key: 4431119d04a442bc45972850d294a40a}
+24.352764 16.706464
+4.359158 s
+Type: Privacy free
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 2, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [4c90a6096f1059f3833b3790fb999e35, c57aae9acd9fe79950ad11920f9da174, 38876c21001c4b0e322544ce68299dcf, b16d64b2a293f564e1b362cc9c2da28e, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: 7d81dcf6d56aac987f1d303b336372a7, global_key: 512f2a912d978f6d36b5f5e91ebfc700}
+19.302699 13.409775
+3.456212 s
+-----
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # inline assembly on half gates
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [4aadca3892c27c06c89a8be7fbf19961, 29c6af6ef1e52d6854367a56afb68416, ef46c2760ff3ed0c404d238b94e5fc23, 8c2da7206cd4bc62dce1d23ac0a2e154, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: f8d27b546368a4f8eeb8b91bad5dfae8, global_key: 9d8dc860527fed6378a0fda4a8730384}
+32.948184 12.739260
+4.821986 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [f01126200285587c3bf4f9ec19b86610, 9d52e6f572d00738947dabe0fc23ccf9, e7e30fa7034d6fb43b91bc49ac6b7c83, 8aa0cf72731830f09418ee4549f0d66a, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 1, ...], fixed_label: b34b9d375aae006eef6d222c40f17c4e, global_key: 24ec4bf591e64495730400d75fcedf15}
+24.282310 15.408242
+4.216736 s
+Type: Privacy free
+thread '<unnamed>' panicked at 'privacyfree invalid lsb: 3830: u8x16(9, 21, 67, 234, 195, 40, 122, 88, 237, 93, 153, 95, 4, 148, 98, 85) u8x16(130, 0, 129, 105, 134, 240, 77, 48, 189, 253, 232, 172, 163, 174, 97, 160) u8x16(104, 58, 51, 152, 92, 214, 128, 124, 229, 165, 83, 118, 90, 209, 90, 183)', src/garble.rs:531
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+fatal runtime error: failed to initiate panic, error 5
+Aborted
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # LLVM intrinsics on half gates
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes 
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [09da8dc699c3da90fd02073af91ac5f7, 02db715f6a30de3b8df66bd3383c3ccb, c107a818c7bc18bbffff4722b15d0ded, ca065481344f1c108f0b2bcb707bf4d1, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 1, 0, 0, ...], fixed_label: 362bb26dd39d9cd94291478cf8f931d6, global_key: 59605402f9a9fe8bee1406c023933193}
+32.912852 12.863038
+4.810079 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [7abdc533bfd545e30505723df1ef7bff, bfe491122d6c837cde471e48393b8d64, 75da26e72df66ddd140435da6277d92c, b08372c6bf4fab42cf4659afaaa32fb7, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 1, 1, 0, ...], fixed_label: 0882f54e6bc74a9e409b56c8802a81f3, global_key: 227c2065202adb8ca6a2402034c5cba4}
+25.862192 16.025849
+4.419998 s
+Type: Privacy free
+thread '<unnamed>' panicked at 'privacyfree invalid lsb: 3830: u8x16(21, 49, 169, 38, 158, 193, 167, 122, 36, 183, 106, 180, 73, 165, 155, 135) u8x16(68, 49, 159, 114, 142, 88, 223, 172, 72, 254, 227, 219, 48, 124, 227, 68) u8x16(28, 187, 175, 134, 246, 114, 99, 195, 94, 182, 23, 36, 215, 209, 140, 236)', src/garble.rs:531
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+fatal runtime error: failed to initiate panic, error 5
+Aborted
+-----
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # eval_gate_standard asm
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [b2018566ff6fbaf8dd678eb447963399, a9805b864e27f9b45e61f73734324c32, 598eef464420947582da6e5810e5f154, 420f31a6f568d73901dc17db63418eff, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 1, 0, 1, ...], fixed_label: 98941fd15810900cce14903202c32f49, global_key: c587d6d17819b0073b3ceb6183da453b}
+32.895027 12.731950
+4.771329 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [0d549d1ab6a9c4b5532c55b2caa3917e, 4684e5409420883659375a2efd1f93b5, a451a5e5e5935f2f3939384e79c06649, ef81ddbfc71a13ac332237d24e7c6482, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 1, 0, 0, ...], fixed_label: 0d8cea7f556ea235af9acd70bda3b1aa, global_key: 47776df116a367d868f24544d6e1979c}
+24.140710 15.410763
+4.197750 s
+Type: Privacy free
+thread '<unnamed>' panicked at 'privacyfree invalid lsb: 3830: u8x16(123, 183, 49, 29, 6, 108, 20, 29, 212, 221, 192, 40, 98, 44, 151, 223) u8x16(22, 41, 236, 206, 176, 208, 43, 93, 177, 106, 103, 61, 156, 227, 62, 46) u8x16(36, 130, 255, 101, 7, 212, 185, 227, 31, 106, 197, 215, 216, 98, 219, 224)', src/garble.rs:531
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+fatal runtime error: failed to initiate panic, error 5
+Aborted
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # eval_gate_standard LLVM
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes 
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [bdc7285f7055dd3abe6d1678a2149a13, ee39d9e520ec855397e96e34e818f2c7, 0c146793b0b6132d806f49d077c2f8a3, 5fea9629e00f4b44a9eb319c3dce9077, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 0, 0, 1, ...], fixed_label: beb6eb7e6c12d9f4a2d4a71369633382, global_key: f11816584096d65187229ab52da198aa}
+32.747454 12.683717
+4.761550 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [47209eca55fe3d5b0b2a01ebd28a6d33, ee5f7ecbab69512ce398bd60a3bd5f23, 2f3e133911c1ca55e9ae741eea9c7ed8, 8641f338ef56a622011cc8959bab4cc8, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 1, 1, 1, ...], fixed_label: ea0a96126718cd7c08eff731b781ce95, global_key: 6406fefd16af31204d9e568a332144f1}
+24.333330 15.413046
+4.228481 s
+Type: Privacy free
+thread '<unnamed>' panicked at 'privacyfree invalid lsb: 3830: u8x16(215, 101, 76, 12, 215, 15, 26, 41, 248, 182, 182, 113, 71, 163, 130, 187) u8x16(60, 217, 227, 60, 172, 32, 84, 202, 49, 83, 216, 39, 78, 251, 101, 171) u8x16(186, 175, 164, 27, 39, 198, 216, 34, 151, 138, 77, 159, 249, 162, 8, 51)', src/garble.rs:531
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+fatal runtime error: failed to initiate panic, error 5
+Aborted
+-----

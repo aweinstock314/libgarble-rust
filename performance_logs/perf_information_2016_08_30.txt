@@ -1,0 +1,31 @@
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # --release no -g
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [0e095defedc086cf972144c445369106, 5705d43e6c841d2aacdcd98589454cde, a3acc5c5c5013de47cfb0c7280021acf, faa04c144445a601470691334c71c717, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 0, 0, 1, ...], fixed_label: 3d8e798347bda5970b9ac81d5b48a6ff, global_key: 7fb5d8cf7557bd47682dda0312d9ce19}
+32.850697 12.732237
+4.770594 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [cf23771b67d63a394ee35f00a8879169, 3015762af0820947d905908389f5fa41, 3ac33aa441043f1af4d04fd46df576a4, c5f53b95d6500c64633680574c871d8c, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 0, 1, 1, ...], fixed_label: 4a77d112de05ab2fb36c6d55310752fd, global_key: 5c21048d9e2eaa0cd61d3b103981469e}
+24.139570 15.363648
+4.183567 s
+Type: Privacy free
+thread '<unnamed>' panicked at 'privacyfree invalid lsb: 3830: u8x16(53, 0, 225, 109, 10, 25, 139, 244, 100, 57, 143, 251, 119, 14, 230, 177) u8x16(80, 244, 146, 151, 19, 187, 198, 92, 26, 215, 224, 220, 36, 22, 198, 238) u8x16(70, 16, 11, 144, 50, 187, 84, 224, 7, 224, 127, 47, 229, 109, 37, 235)', src/garble.rs:531
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+fatal runtime error: failed to initiate panic, error 5
+Aborted
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # --release with -g
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes 
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [2abc89d44d459a3fb815db38a055c245, 692eaa62b6abf9af513939fdbce509d3, 032a7657d60046b0575bad066c3adc4e, 40b855e12dee2520be774fc3708a17d8, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 1, 1, ...], fixed_label: 378f7d49101cca2d27c3b31b69f8742b, global_key: de47e13b904b8ef9463bb97c82f34d4c}
+33.288330 12.699122
+4.811383 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [20634f72d8fb0e45bc115eb148915632, 3346fdf671a2c1ddbdf5362d718e3a56, 85222c3e23acbac925f8b176e781ffcd, 96079eba8af57551241cd9eade9e93a9, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 1, 1, 1, ...], fixed_label: 2d075ed229aef4cbf81223068c23d1e2, global_key: 7a7efa95801463b0fb46f1d536f088db}
+24.605461 15.389992
+4.239209 s
+Type: Privacy free
+thread '<unnamed>' panicked at 'privacyfree invalid lsb: 3830: u8x16(17, 12, 128, 213, 92, 52, 247, 133, 141, 117, 122, 80, 73, 156, 68, 131) u8x16(202, 245, 146, 115, 26, 71, 39, 86, 247, 226, 110, 110, 173, 79, 25, 91) u8x16(236, 109, 63, 58, 24, 177, 233, 50, 166, 66, 196, 204, 141, 153, 69, 164)', src/garble.rs:531
+note: Run with `RUST_BACKTRACE=1` for a backtrace.
+fatal runtime error: failed to initiate panic, error 5
+Aborted
+-----
