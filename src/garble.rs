@@ -380,7 +380,7 @@ fn garble_table_size(gc: *const GarbleCircuit) -> usize {
 }
 
 fn garble_loop<F>(garble_gate: F, gc: &mut GarbleCircuit, key: &AesKey, delta: Block) where
-    F: Fn(u8, Block, Block, Block, Block, *mut Block, *mut Block, Block, *mut Block, isize, &AesKey) {
+    F: Fn(u8, Block, Block, Block, Block, &mut Block, &mut Block, Block, *mut Block, isize, &AesKey) {
     let mult = garble_table_multiplier(gc.ty) as isize;
     for i in 0..gc.q {
         let i = i as isize;
@@ -392,8 +392,8 @@ fn garble_loop<F>(garble_gate: F, gc: &mut GarbleCircuit, key: &AesKey, delta: B
                 *gc.wires.offset(2 * (g.in0 as isize) + 1),
                 *gc.wires.offset(2 * (g.in1 as isize)),
                 *gc.wires.offset(2 * (g.in1 as isize) + 1),
-                gc.wires.offset(2 * (g.out as isize)),
-                gc.wires.offset(2 * (g.out as isize) + 1),
+                &mut *gc.wires.offset(2 * (g.out as isize)),
+                &mut *gc.wires.offset(2 * (g.out as isize) + 1),
                 delta, gc.table.offset(mult * i), i, key);
         }
     }
@@ -401,13 +401,11 @@ fn garble_loop<F>(garble_gate: F, gc: &mut GarbleCircuit, key: &AesKey, delta: B
 
 fn garble_gate_standard(ty: u8,
     mut a0: Block, mut a1: Block, mut b0: Block, mut b1: Block,
-    out0: *mut Block, out1: *mut Block,
+    out0: &mut Block, out1: &mut Block,
     delta: Block, table: *mut Block, idx: isize, key: &AesKey) {
     if ty == GARBLE_GATE_XOR {
-        unsafe {
-            *out0 = a0 ^ b0;
-            *out1 = *out0 ^ delta;
-        }
+        *out0 = a0 ^ b0;
+        *out1 = *out0 ^ delta;
         //println!("garble_gate_standard: {}: XOR", idx);
     } else {
         let tweak = block_from_u64x2(0, idx as u64);
@@ -432,10 +430,9 @@ fn garble_gate_standard(ty: u8,
         let newtoken1 = newtoken0 ^ delta;
 
         let (label0, label1) = if lsb0 & lsb1 == 1 { (newtoken1, newtoken0) } else { (newtoken0, newtoken1) };
-        unsafe {
-            *out0 = label0;
-            *out1 = label1;
-        }
+        *out0 = label0;
+        *out1 = label1;
+
         // TODO: it looks like an AND gate is hardcoded here, generalize to support arbitrary gates
         assert_eq!(ty, GARBLE_GATE_AND);
         let blocks = [
@@ -473,13 +470,11 @@ fn garble_gate_standard(ty: u8,
 
 fn garble_gate_halfgates(ty: u8,
     a0: Block, a1: Block, b0: Block, b1: Block,
-    out0: *mut Block, out1: *mut Block,
+    out0: &mut Block, out1: &mut Block,
     delta: Block, table: *mut Block, idx: isize, key: &AesKey) {
     if ty == GARBLE_GATE_XOR {
-        unsafe {
-            *out0 = a0 ^ b0;
-            *out1 = *out0 ^ delta;
-        }
+        *out0 = a0 ^ b0;
+        *out1 = *out0 ^ delta;
     } else {
         let idx = idx as u64;
         let pa = (a0.extract(0) & 1) == 1;
@@ -518,13 +513,11 @@ fn garble_gate_halfgates(ty: u8,
 
 fn garble_gate_privacyfree(ty: u8,
     a0: Block, a1: Block, b0: Block, _: Block,
-    out0: *mut Block, out1: *mut Block,
+    out0: &mut Block, out1: &mut Block,
     delta: Block, table: *mut Block, idx: isize, key: &AesKey) {
     if ty == GARBLE_GATE_XOR {
-        unsafe {
-            *out0 = a0 ^ b0;
-            *out1 = *out0 ^ delta;
-        }
+        *out0 = a0 ^ b0;
+        *out1 = *out0 ^ delta;
     } else {
         if a0.extract(0) & 1 == 1 || b0.extract(0) & 1 == 1 || a1.extract(0) & 1 == 0 {
             panic!("privacyfree invalid lsb: {}: {:?} {:?} {:?}", idx, a0, b0, a1);
@@ -541,9 +534,9 @@ fn garble_gate_privacyfree(ty: u8,
         let tmp = ha0 ^ ha1;
         unsafe {
             *table.offset(0) = tmp ^ b0;
-            *out0 = ha0;
-            *out1 = ha0 ^ delta;
         }
+        *out0 = ha0;
+        *out1 = ha0 ^ delta;
     }
 }
 
