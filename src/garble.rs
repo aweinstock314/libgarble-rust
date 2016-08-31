@@ -185,23 +185,24 @@ pub struct GarbleCircuit {
 }
 
 fn eval_loop<F>(eval_gate: F, gc: &GarbleCircuit, labels: &mut [Block], key: &AesKey) where
-    F: Fn(u8, Block, Block, &mut Block, *const Block, isize, &AesKey) {
-    let mult = garble_table_multiplier(gc.ty) as isize;
+    F: Fn(u8, Block, Block, &mut Block, *const Block, u64, &AesKey) {
+    let mult = garble_table_multiplier(gc.ty);
+
+    /* // this approach would be safer/higher-level, but doesn't currently optimize as well
+    let gc_gates = unsafe { slice::from_raw_parts(gc.gates, gc.q) };
+    for (i, g) in gc_gates.iter().enumerate() { */
     for i in 0..gc.q {
-        let i = i as isize;
-        unsafe {
-            let g: &GarbleGate = gc.gates.offset(i).as_mut().unwrap();
-            eval_gate(g.ty,
-                labels[g.in0],
-                labels[g.in1],
-                &mut labels[g.out],
-                gc.table.offset(mult*i),
-                i, key);
-        }
+        let g: &GarbleGate = unsafe { &*gc.gates.offset(i as isize) };
+        eval_gate(g.ty,
+            labels[g.in0],
+            labels[g.in1],
+            &mut labels[g.out],
+            unsafe { gc.table.offset((mult*i) as isize) },
+            i as u64, key);
     }
 }
 
-fn eval_gate_standard(ty: u8, a: Block, b: Block, out: &mut Block, table: *const Block, idx: isize, key: &AesKey) {
+fn eval_gate_standard(ty: u8, a: Block, b: Block, out: &mut Block, table: *const Block, idx: u64, key: &AesKey) {
     if ty == GARBLE_GATE_XOR {
         *out = a ^ b;
     } else {
@@ -209,18 +210,17 @@ fn eval_gate_standard(ty: u8, a: Block, b: Block, out: &mut Block, table: *const
         let lsb_b = (b.extract(0) & 1) as isize;
         let ha = double_xmm(a);
         let hb = quadruple_xmm(b);
-        let tweak = block_from_u64x2(0, idx as u64);
+        let tweak = block_from_u64x2(0, idx);
         let mut val = [ha ^ hb ^ tweak];
         let tmp = if lsb_a + lsb_b > 0 { unsafe { *table.offset(2*lsb_a + lsb_b - 1) ^ val[0] } } else { val[0] };
         aes_ecb_encrypt_blocks::<AesniViaLLVM>(&mut val, key);
         *out = val[0] ^ tmp;
     }
 }
-fn eval_gate_halfgates(ty: u8, a: Block, b: Block, out: &mut Block, table: *const Block, idx: isize, key: &AesKey) {
+fn eval_gate_halfgates(ty: u8, a: Block, b: Block, out: &mut Block, table: *const Block, idx: u64, key: &AesKey) {
     if ty == GARBLE_GATE_XOR {
         *out = a ^ b;
     } else {
-        let idx = idx as u64;
         let sa = (a.extract(0) & 1) == 1;
         let sb = (b.extract(0) & 1) == 1;
         let tweak1 = block_from_u64x2(0, 2*idx);
@@ -240,11 +240,10 @@ fn eval_gate_halfgates(ty: u8, a: Block, b: Block, out: &mut Block, table: *cons
         }
     }
 }
-fn eval_gate_privacyfree(ty: u8, a: Block, b: Block, out: &mut Block, table: *const Block, idx: isize, key: &AesKey) {
+fn eval_gate_privacyfree(ty: u8, a: Block, b: Block, out: &mut Block, table: *const Block, idx: u64, key: &AesKey) {
     if ty == GARBLE_GATE_XOR {
         *out = a ^ b;
     } else {
-        let idx = idx as u64;
         let sa = (a.extract(0) & 1) == 1;
         let tweak = block_from_u64x2(0, 2*idx);
 
