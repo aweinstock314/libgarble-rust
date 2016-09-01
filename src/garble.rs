@@ -333,6 +333,13 @@ fn garble_table_size(gc: *const GarbleCircuit) -> usize {
                     *wire0 = block_clearlsb(*wire0);
                 }
                 *wire1 = *wire0 ^ delta;
+                if cfg!(feature="privacyfree_debugging") {
+                    if let GarbleType::PrivacyFree = gc.ty {
+                        if (*wire0).extract(0) & 1 == 1 || (*wire1).extract(0) & 1 == 0 {
+                            panic!("privacyfree invalid lsb wire: {}: {:?} {:?}", i, *wire0, *wire1);
+                        }
+                    }
+                }
             }
         }
     }
@@ -343,8 +350,8 @@ fn garble_table_size(gc: *const GarbleCircuit) -> usize {
         *gc.wires.offset((2*gc.n) as _) = block_clearlsb(fixed_label);
         *gc.wires.offset((2*gc.n+1) as _) = block_clearlsb(fixed_label) ^ delta;
 
-        *gc.wires.offset((2*(gc.n+1)) as _) = block_setlsb(fixed_label);
-        *gc.wires.offset((2*(gc.n+1)+1) as _) = block_setlsb(fixed_label) ^ delta;
+        *gc.wires.offset((2*(gc.n+1)) as _) = block_setlsb(fixed_label) ^ delta;
+        *gc.wires.offset((2*(gc.n+1)+1) as _) = block_setlsb(fixed_label);
     }
 
     gc.global_key = garble_random_block();
@@ -495,16 +502,19 @@ fn garble_gate_halfgates(ty: u8,
 }
 
 fn garble_gate_privacyfree(ty: u8,
-    a0: Block, a1: Block, b0: Block, _: Block,
+    a0: Block, a1: Block, b0: Block, b1: Block,
     out0: &mut Block, out1: &mut Block,
     delta: Block, table: *mut Block, idx: isize, key: &AesKey) {
+    if cfg!(feature="privacyfree_debugging") {
+        if a0.extract(0) & 1 == 1 || b0.extract(0) & 1 == 1 || a1.extract(0) & 1 == 0 || b1.extract(0) & 1 == 0 {
+            panic!("privacyfree invalid lsb: {}: {:?} {:?} {:?} {:?}", idx, a0, b0, a1, b1);
+        }
+        //println!("garble_gate_privacyfree: {}: {}", idx, if ty == GARBLE_GATE_XOR { "XOR" } else { "AND" });
+    }
     if ty == GARBLE_GATE_XOR {
         *out0 = a0 ^ b0;
         *out1 = *out0 ^ delta;
     } else {
-        if a0.extract(0) & 1 == 1 || b0.extract(0) & 1 == 1 || a1.extract(0) & 1 == 0 {
-            panic!("privacyfree invalid lsb: {}: {:?} {:?} {:?}", idx, a0, b0, a1);
-        }
         let idx = idx as u64;
         let tweak = block_from_u64x2(0, 2*idx);
 
@@ -520,6 +530,9 @@ fn garble_gate_privacyfree(ty: u8,
         }
         *out0 = ha0;
         *out1 = ha0 ^ delta;
+    }
+    if cfg!(feature="privacyfree_debugging") && (out0.extract(0) & 1 == 1 || out1.extract(0) & 1 == 0) {
+        panic!("privacyfree invalid lsb output: {}: {:?} {:?}", idx, *out0, *out1);
     }
 }
 
