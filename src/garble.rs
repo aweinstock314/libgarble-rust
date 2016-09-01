@@ -274,8 +274,44 @@ fn eval_gate_privacyfree(ty: u8, a: Block, b: Block, out: &mut Block, table: *co
     }
     //println!("extracted_labels: {:?}\nbits: {:?}", extracted_labels, bits);
 }
-#[no_mangle] pub extern fn garble_from_buffer() {
-    panic!("garble_from_buffer");
+#[no_mangle] pub extern fn garble_from_buffer(gc: *mut GarbleCircuit, mut buf: *const i8, wires: bool) -> c_int {
+    unsafe fn copy_from_buf<T>(pbuf: &mut *const i8, val: *mut T, count: usize) {
+        let bytecount = count * mem::size_of::<T>();
+        ptr::copy(mem::transmute::<*const i8,*const T>(*pbuf), val, bytecount);
+        *pbuf = (*pbuf).offset(bytecount as isize);
+    }
+
+    macro_rules! alloc_and_copy_from_buf {
+        ($pbuf:expr, $val:expr, $count:expr) => {{
+            let pbuf: &mut *const i8 = $pbuf;
+            let pval = &mut $val;
+            let count: usize = $count;
+            let bytecount = count * mem::size_of_val(&**pval);
+            *pval = ::libc::malloc(bytecount) as _;
+            if (*pval).is_null() {
+                ::garble::garble_delete(gc);
+                return GARBLE_ERR;
+            }
+            copy_from_buf(pbuf, *pval, count);
+        }}
+    }
+
+    unsafe {
+        copy_from_buf(&mut buf, &mut (*gc).n, 1);
+        copy_from_buf(&mut buf, &mut (*gc).m, 1);
+        copy_from_buf(&mut buf, &mut (*gc).q, 1);
+        copy_from_buf(&mut buf, &mut (*gc).r, 1);
+        copy_from_buf(&mut buf, &mut (*gc).ty, 1);
+        alloc_and_copy_from_buf!(&mut buf, (*gc).gates, (*gc).q);
+        alloc_and_copy_from_buf!(&mut buf, (*gc).table, (*gc).q * garble_table_multiplier((*gc).ty));
+        if wires { alloc_and_copy_from_buf!(&mut buf, (*gc).wires, 2*(*gc).r) };
+        alloc_and_copy_from_buf!(&mut buf, (*gc).outputs, (*gc).m);
+        alloc_and_copy_from_buf!(&mut buf, (*gc).output_perms, (*gc).m);
+        copy_from_buf(&mut buf, &mut (*gc).fixed_label, 1);
+        copy_from_buf(&mut buf, &mut (*gc).global_key, 1);
+    }
+
+    GARBLE_OK
 }
 
 #[inline]
