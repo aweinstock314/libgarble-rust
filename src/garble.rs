@@ -3,6 +3,7 @@ use libc::{c_int, c_void, calloc, free, posix_memalign};
 use llvmint::x86::{aesni_aesenc, aesni_aesenclast};
 use openssl::crypto::hash;
 use openssl_sys::RAND_bytes;
+use rand::Rng;
 use simd::u8x16;
 use simdty::i64x2;
 use std::{mem, ptr, slice};
@@ -76,7 +77,7 @@ pub enum GarbleType {
 }
 
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct GarbleGate {
     ty: u8,
     in0: usize, in1: usize, out: usize
@@ -748,13 +749,13 @@ fn aes_ecb_encrypt_blocks<A: Aesni>(blocks: &mut [Block], key: &AesKey) {
     }
 }
 
-#[no_mangle] pub extern fn garble_seed(seed: *mut Block) -> Block {
+#[no_mangle] pub extern fn garble_seed(seed: *const Block) -> Block {
     //println!("garble_seed({:p})", seed);
     let mut cur_seed: Block = unsafe { mem::uninitialized() };
     unsafe {
         CURRENT_RAND_INDEX = 0;
     }
-    match unsafe { seed.as_mut() } {
+    match unsafe { seed.as_ref() } {
         Some(seed) => { cur_seed = *seed; }
         None => {
             if unsafe { RAND_bytes(mem::transmute(&mut cur_seed), 16) } == 0 {
@@ -816,6 +817,28 @@ fn aes_ecb_encrypt_blocks<A: Aesni>(blocks: &mut [Block], key: &AesKey) {
     GARBLE_OK
 }
 
+fn generate_random_circuit<R: Rng>(mut rng: R, ty: GarbleType, n: usize, m: usize, q: usize) -> GarbleCircuit {
+    let mut gc = unsafe { mem::uninitialized() };
+    garble_new(&mut gc, n, m, ty);
+    gc.q = q;
+    let mut gates = vec![GarbleGate { ty: 0, in0: 0, in1: 0, out: 0 }; q];
+    for (i, mut g) in gates.iter_mut().enumerate() {
+        g.ty = if rng.gen() { GARBLE_GATE_XOR } else { GARBLE_GATE_AND };
+        g.in0 = rng.gen_range(0, i+n);
+        g.in1 = rng.gen_range(0, i+n);
+        g.out = i;
+    }
+    gc.gates = gates.as_mut_ptr();
+    mem::forget(gates); // ensure that gates outlives this function, gc is now considered to own the memory
+
+    gc.r = n+q;
+    for i in 0..gc.m {
+        unsafe { *gc.outputs.offset(i as _) = (gc.r - gc.m + i) as _; }
+    }
+
+    gc
+}
+
 /*
 >>> expected = __import__('Crypto').Cipher.AES.new('0123456789ABCDEF').encrypt("\0"*16)
 >>> expected.encode('hex')
@@ -825,14 +848,60 @@ fn aes_ecb_encrypt_blocks<A: Aesni>(blocks: &mut [Block], key: &AesKey) {
 */
 #[test]
 fn test_garblerandomblock() {
-    let mut seed = Block::new(b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'A', b'B', b'C', b'D', b'E', b'F');
-    garble_seed(&mut seed as _);
+    let seed = Block::new(b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'A', b'B', b'C', b'D', b'E', b'F');
+    garble_seed(&seed as _);
     let a = garble_random_block();
     println!("a: {:?}", a);
     assert!(a.eq(Block::new(157, 44, 218, 144, 27, 104, 45, 51, 89, 112, 154, 90, 178, 65, 150, 36)).all());
-    garble_seed(&mut seed as _);
+    garble_seed(&seed as _);
     let b = garble_create_delta();
     println!("b: {:?}", b);
     assert!(b.eq(Block::new(157, 44, 218, 144, 27, 104, 45, 51, 89, 112, 154, 90, 178, 65, 150, 36)).all());
     assert!(seed.eq(Block::new(b'0', b'1', b'2', b'3', b'4', b'5', b'6', b'7', b'8', b'9', b'A', b'B', b'C', b'D', b'E', b'F')).all());
+}
+
+#[test]
+fn test_garble_consistencycheck() {
+    let mut rng = ::rand::StdRng::new().unwrap();
+    const N: usize = 128;
+    const M: usize = 128;
+    const Q: usize = 1024;
+
+    let mut hash1 = [0; SHA_DIGEST_LENGTH];
+
+    let mut outputs1 = [false; M];
+    let mut outputs2 = [false; M];
+
+    let input_labels = garble_allocate_blocks(2 * N);
+    let extracted_labels = garble_allocate_blocks(N);
+    let output_map = garble_allocate_blocks(2 * M);
+    let computed_output_map = garble_allocate_blocks(M);
+
+    let inputs: Vec<bool> = rng.gen_iter().take(N).collect();
+
+    let seed = garble_seed(ptr::null());
+    let rng = rng; // avoid accidentally mutating the rng
+    let mut gc1 = generate_random_circuit(rng.clone(), GarbleType::HalfGates, N, M, Q);
+    garble_garble(&mut gc1, ptr::null(), output_map);
+    garble_hash(&gc1, hash1.as_mut_ptr());
+    unsafe { ptr::copy(gc1.wires, input_labels, 2 * N) };
+
+    garble_extract_labels(extracted_labels, input_labels, inputs.as_ptr(), N);
+    garble_eval(&gc1, extracted_labels, computed_output_map, outputs1.as_mut_ptr());
+    assert!(garble_map_outputs(output_map, computed_output_map, outputs2.as_mut_ptr(), M) == GARBLE_OK);
+    assert!(outputs1.iter().zip(outputs2.iter()).all(|(o1,o2)| o1 == o2));
+
+    garble_seed(&seed);
+    let mut gc2 = generate_random_circuit(rng.clone(), GarbleType::HalfGates, N, M, Q);
+    garble_garble(&mut gc2, ptr::null(), ptr::null_mut());
+    assert!(garble_check(&gc2, hash1.as_ptr()) == GARBLE_OK);
+    garble_delete(&mut gc2);
+
+    unsafe {
+        free(computed_output_map as _);
+        free(extracted_labels as _);
+        free(output_map as _);
+        free(input_labels as _);
+    }
+    garble_delete(&mut gc1);
 }
