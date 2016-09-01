@@ -13,3 +13,19 @@ GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 2, gates: [GarbleGate(6
 17.496931 11.768294
 3.102302 s
 -----
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble-rust$ cargo bench
+    Finished release [optimized] target(s) in 0.0 secs
+     Running target/release/deps/garble-42b8ff38e4c08088
+
+running 8 tests
+test garble::test_garble_consistencycheck ... ignored
+test garble::test_garblerandomblock ... ignored
+test garble::benchmarks::bench_eval_halfgates     ... bench:      46,796 ns/iter (+/- 2,256)
+test garble::benchmarks::bench_eval_privacyfree   ... bench:      26,789 ns/iter (+/- 874)
+test garble::benchmarks::bench_eval_standard      ... bench:      32,602 ns/iter (+/- 875)
+test garble::benchmarks::bench_garble_halfgates   ... bench:      78,989 ns/iter (+/- 2,695)
+test garble::benchmarks::bench_garble_privacyfree ... bench:      47,261 ns/iter (+/- 2,144)
+test garble::benchmarks::bench_garble_standard    ... bench:      91,136 ns/iter (+/- 4,064)
+
+test result: ok. 0 passed; 0 failed; 2 ignored; 6 measured
+-----
