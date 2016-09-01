@@ -732,11 +732,52 @@ fn aes_ecb_encrypt_blocks<A: Aesni>(blocks: &mut [Block], key: &AesKey) {
     //println!("seeded: {:?}", aes);
     cur_seed
 }
-#[no_mangle] pub extern fn garble_size() {
-    panic!("garble_size");
+#[no_mangle] pub extern fn garble_size(gc: *const GarbleCircuit, wires: bool) -> usize {
+    use std::mem::size_of_val as s;
+    use std::mem::size_of as t;
+    let gc: &GarbleCircuit = unsafe { &*gc };
+    let mut size = 0;
+
+    size += s(&gc.n) + s(&gc.m) + s(&gc.q) + s(&gc.r);
+    size += s(&gc.ty);
+    size += t::<GarbleGate>() * gc.q;
+    size += garble_table_size(gc) * gc.q;
+    if wires { size += t::<Block>() * 2 * gc.r };
+    size += t::<c_int>() * gc.m;
+    size += t::<bool>() * gc.m;
+    size += s(&gc.fixed_label);
+    size += s(&gc.global_key);
+
+    size
 }
-#[no_mangle] pub extern fn garble_to_buffer() {
-    panic!("garble_to_buffer");
+#[no_mangle] pub extern fn garble_to_buffer(gc: *const GarbleCircuit, mut buf: *mut i8, wires: bool) -> c_int {
+    // The C library tries to malloc if buf is null, but does it in a way that introduces an unconditional memory leak (it'd need char** buf to be correct)
+    if buf.is_null() { return GARBLE_ERR; }
+    // No null-checking is performed on gc
+    let gc: &GarbleCircuit = unsafe { &*gc };
+
+    unsafe fn copy_to_buf<T>(pbuf: &mut *mut i8, val: &T, count: usize) {
+        let bytecount = count * mem::size_of::<T>();
+        ptr::copy(mem::transmute::<&T,*const i8>(val), *pbuf, bytecount);
+        *pbuf = (*pbuf).offset(bytecount as isize);
+    }
+
+    unsafe {
+        copy_to_buf(&mut buf, &gc.n, 1);
+        copy_to_buf(&mut buf, &gc.m, 1);
+        copy_to_buf(&mut buf, &gc.q, 1);
+        copy_to_buf(&mut buf, &gc.r, 1);
+        copy_to_buf(&mut buf, &gc.ty, 1);
+        copy_to_buf(&mut buf, &*gc.gates, gc.q);
+        copy_to_buf(&mut buf, &*gc.table, gc.q * garble_table_multiplier(gc.ty));
+        if wires { copy_to_buf(&mut buf, &*gc.wires, 2*gc.r) };
+        copy_to_buf(&mut buf, &*gc.outputs, gc.m);
+        copy_to_buf(&mut buf, &*gc.output_perms, gc.m);
+        copy_to_buf(&mut buf, &gc.fixed_label, 1);
+        copy_to_buf(&mut buf, &gc.global_key, 1);
+    }
+
+    GARBLE_OK
 }
 
 /*
