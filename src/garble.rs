@@ -8,7 +8,7 @@ use simd::u8x16;
 use simdty::i64x2;
 use std::{mem, ptr, slice};
 
-type Block = u8x16;
+pub type Block = u8x16;
 
 #[inline]
 fn block_from_i64x2(x: i64x2) -> Block {
@@ -817,7 +817,7 @@ fn aes_ecb_encrypt_blocks<A: Aesni>(blocks: &mut [Block], key: &AesKey) {
     GARBLE_OK
 }
 
-fn generate_random_circuit<R: Rng>(mut rng: R, ty: GarbleType, n: usize, m: usize, q: usize) -> GarbleCircuit {
+pub fn generate_random_circuit<R: Rng>(mut rng: R, ty: GarbleType, n: usize, m: usize, q: usize) -> GarbleCircuit {
     let mut gc = unsafe { mem::uninitialized() };
     garble_new(&mut gc, n, m, ty);
     gc.q = q;
@@ -904,4 +904,59 @@ fn test_garble_consistencycheck() {
         free(input_labels as _);
     }
     garble_delete(&mut gc1);
+}
+
+#[cfg(test)]
+mod benchmarks {
+    use garble::*;
+    use rand::{Rng, StdRng};
+    use std::ptr;
+    use test::Bencher;
+    const N: usize = 128;
+    const M: usize = 128;
+    const Q: usize = 4096;
+
+    #[inline(always)]
+    fn bench_harness<F>(b: &mut Bencher, ty: GarbleType, f: F) where
+        F: Fn(&mut Bencher, *mut Block, *mut Block, *mut Block, *mut Block, *mut bool, *const bool, *mut GarbleCircuit) {
+        let mut rng = StdRng::new().unwrap();
+
+        let input_labels = garble_allocate_blocks(2 * N);
+        let extracted_labels = garble_allocate_blocks(N);
+        let output_map = garble_allocate_blocks(2 * M);
+        let computed_output_map = garble_allocate_blocks(M);
+        let mut outputs = [false; M];
+        let inputs: Vec<bool> = rng.gen_iter().take(N).collect();
+
+        let rng = rng;
+
+        let mut gc = generate_random_circuit(rng.clone(), ty, N, M, Q);
+        f(b, input_labels, extracted_labels, output_map, computed_output_map, outputs.as_mut_ptr(), inputs.as_ptr(), &mut gc);
+    }
+
+    #[inline(always)]
+    fn bench_garble(b: &mut Bencher, ty: GarbleType) {
+        bench_harness(b, ty, |b, input_labels, extracted_labels, output_map, computed_output_map, outputs, inputs, gc| {
+            b.iter(|| { garble_garble(gc, ptr::null(), output_map) });
+            garble_extract_labels(extracted_labels, input_labels, inputs, N);
+            garble_eval(gc, extracted_labels, computed_output_map, outputs);
+        });
+    }
+    #[inline(always)]
+    fn bench_eval(b: &mut Bencher, ty: GarbleType) {
+        bench_harness(b, ty, |b, input_labels, extracted_labels, output_map, computed_output_map, outputs, inputs, gc| {
+            garble_garble(gc, ptr::null(), output_map);
+            b.iter(|| {
+                garble_extract_labels(extracted_labels, input_labels, inputs, N);
+                garble_eval(gc, extracted_labels, computed_output_map, outputs);
+            });
+        });
+    }
+
+    #[bench] fn bench_garble_standard(b: &mut Bencher) { bench_garble(b, GarbleType::Standard); }
+    #[bench] fn bench_garble_halfgates(b: &mut Bencher) { bench_garble(b, GarbleType::HalfGates); }
+    #[bench] fn bench_garble_privacyfree(b: &mut Bencher) { bench_garble(b, GarbleType::PrivacyFree); }
+    #[bench] fn bench_eval_standard(b: &mut Bencher) { bench_eval(b, GarbleType::Standard);}
+    #[bench] fn bench_eval_halfgates(b: &mut Bencher) { bench_eval(b, GarbleType::HalfGates);}
+    #[bench] fn bench_eval_privacyfree(b: &mut Bencher) { bench_eval(b, GarbleType::PrivacyFree);}
 }
