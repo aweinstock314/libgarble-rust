@@ -77,7 +77,7 @@ pub enum GarbleType {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct GarbleGate {
     ty: u8,
     in0: usize, in1: usize, out: usize
@@ -800,18 +800,31 @@ fn aes_ecb_encrypt_blocks<A: Aesni>(blocks: &mut [Block], key: &AesKey) {
     }
 
     unsafe {
+        println!("1 {:p}", buf);
         copy_to_buf(&mut buf, &gc.n, 1);
+        println!("2 {:p}", buf);
         copy_to_buf(&mut buf, &gc.m, 1);
+        println!("3 {:p}", buf);
         copy_to_buf(&mut buf, &gc.q, 1);
+        println!("4 {:p}", buf);
         copy_to_buf(&mut buf, &gc.r, 1);
+        println!("5 {:p}", buf);
         copy_to_buf(&mut buf, &gc.ty, 1);
+        println!("6 {:p}", buf);
         copy_to_buf(&mut buf, &*gc.gates, gc.q);
+        println!("7 {:p}", buf);
         copy_to_buf(&mut buf, &*gc.table, gc.q * garble_table_multiplier(gc.ty));
+        println!("8 {:p}", buf);
         if wires { copy_to_buf(&mut buf, &*gc.wires, 2*gc.r) };
+        println!("9 {:p}", buf);
         copy_to_buf(&mut buf, &*gc.outputs, gc.m);
+        println!("a {:p}", buf);
         copy_to_buf(&mut buf, &*gc.output_perms, gc.m);
+        println!("b {:p}", buf);
         copy_to_buf(&mut buf, &gc.fixed_label, 1);
+        println!("c {:p}", buf);
         copy_to_buf(&mut buf, &gc.global_key, 1);
+        println!("d {:p}", buf);
     }
 
     GARBLE_OK
@@ -863,6 +876,8 @@ fn test_garblerandomblock() {
 #[test]
 fn test_garble_consistencycheck() {
     let mut rng = ::rand::StdRng::new().unwrap();
+    //use rand::SeedableRng; let mut rng = ::rand::StdRng::from_seed(&[13]);
+
     const N: usize = 128;
     const M: usize = 128;
     const Q: usize = 1024;
@@ -878,11 +893,19 @@ fn test_garble_consistencycheck() {
     let computed_output_map = garble_allocate_blocks(M);
 
     let inputs: Vec<bool> = rng.gen_iter().take(N).collect();
+    println!("{:?}", inputs);
 
     let seed = garble_seed(ptr::null());
+    //let seed = garble_seed(&Block::new(13, 51, 160, 67, 16, 185, 160, 164, 193, 84, 26, 6, 252, 133, 65, 250));
     let rng = rng; // avoid accidentally mutating the rng
+
+    // assert that rng cloning is deterministic
+    assert_eq!(rng.clone().gen_iter().take(N).collect::<Vec<u8>>(), rng.clone().gen_iter().take(N).collect::<Vec<u8>>());
+
     let mut gc1 = generate_random_circuit(rng.clone(), GarbleType::HalfGates, N, M, Q);
+    println!("gc1 before garble {:?}", gc1);
     garble_garble(&mut gc1, ptr::null(), output_map);
+    println!("gc1 after garble {:?}", gc1);
     garble_hash(&gc1, hash1.as_mut_ptr());
     unsafe { ptr::copy(gc1.wires, input_labels, 2 * N) };
 
@@ -891,11 +914,38 @@ fn test_garble_consistencycheck() {
     assert!(garble_map_outputs(output_map, computed_output_map, outputs2.as_mut_ptr(), M) == GARBLE_OK);
     assert!(outputs1.iter().zip(outputs2.iter()).all(|(o1,o2)| o1 == o2));
 
-    garble_seed(&seed);
+    println!("seed {:?}", seed);
+    let seed2 = garble_seed(&seed);
+    println!("seed2 {:?}", seed);
     let mut gc2 = generate_random_circuit(rng.clone(), GarbleType::HalfGates, N, M, Q);
+    println!("gc2 before garble {:?}", gc2);
     garble_garble(&mut gc2, ptr::null(), ptr::null_mut());
+    println!("gc2 after garble {:?}", gc2);
+
+    unsafe {
+        assert_eq!(slice::from_raw_parts(gc1.gates, gc1.q), slice::from_raw_parts(gc2.gates, gc2.q));
+        // u8x16 doesn't support PartialEq, consider making Block a newtype? (would also enable hex printouts)
+        //assert_eq!(slice::from_raw_parts(gc1.table, gc1.q), slice::from_raw_parts(gc2.table, gc2.q));
+        //assert_eq!(slice::from_raw_parts(gc1.wires, 2*gc1.r), slice::from_raw_parts(gc2.wires, 2*gc2.r));
+    }
+    assert!(gc1.fixed_label.eq(gc2.fixed_label).all());
+    assert!(gc1.global_key.eq(gc2.global_key).all());
+
+    assert_eq!(garble_size(&gc1, true), garble_size(&gc2, true));
+    let size = garble_size(&gc1, true);
+    println!("size: {}", size);
+    let mut bytes1 = vec![0; size];
+    let mut bytes2 = vec![0; size];
+    assert!(garble_to_buffer(&gc1, bytes1.as_mut_ptr(), true) == GARBLE_OK);
+    assert!(garble_to_buffer(&gc2, bytes2.as_mut_ptr(), true) == GARBLE_OK);
+    for i in 0..size {
+        if bytes1[i] != bytes2[i] {
+            println!("inequality at {}: {:x} {:x}", i, bytes1[i] as u8, bytes2[i] as u8);
+        }
+    }
+    assert_eq!(bytes1, bytes2);
+
     assert!(garble_check(&gc2, hash1.as_ptr()) == GARBLE_OK);
-    garble_delete(&mut gc2);
 
     unsafe {
         free(computed_output_map as _);
@@ -904,6 +954,7 @@ fn test_garble_consistencycheck() {
         free(input_labels as _);
     }
     garble_delete(&mut gc1);
+    garble_delete(&mut gc2);
 }
 
 #[cfg(test)]
