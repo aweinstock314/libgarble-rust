@@ -4,9 +4,11 @@ use llvmint::x86::{aesni_aesenc, aesni_aesenclast};
 use openssl::crypto::hash;
 use openssl_sys::RAND_bytes;
 use rand::Rng;
+use rayon::prelude::*;
 use simd::u8x16;
 use simdty::i64x2;
 use std::{mem, ptr, slice};
+use std::ops::Range;
 
 pub type Block = u8x16;
 
@@ -96,6 +98,8 @@ pub struct GarbleCircuit {
     fixed_label: Block,
     global_key: Block
 }
+// needed for parallelism, should be safe if disjoint parts of the arrays are accessed
+unsafe impl Sync for GarbleCircuit {}
 
 #[no_mangle] pub extern fn garble_allocate_blocks(nblocks: usize) -> *mut Block {
     let mut blocks: *mut c_void = ptr::null_mut();
@@ -402,9 +406,9 @@ fn garble_table_size(gc: *const GarbleCircuit) -> usize {
     //println!("global_key: {:?}\nkey: {:?}", gc.global_key, key);
 
     match gc.ty {
-        GarbleType::Standard => garble_loop(garble_gate_standard, gc, &key, delta),
-        GarbleType::HalfGates => garble_loop(garble_gate_halfgates, gc, &key, delta),
-        GarbleType::PrivacyFree => garble_loop(garble_gate_privacyfree, gc, &key, delta),
+        GarbleType::Standard => garble_loop::<_,SerialForLoop>(garble_gate_standard, gc, &key, delta),
+        GarbleType::HalfGates => garble_loop::<_,SerialForLoop>(garble_gate_halfgates, gc, &key, delta),
+        GarbleType::PrivacyFree => garble_loop::<_,SerialForLoop>(garble_gate_privacyfree, gc, &key, delta),
     }
 
     for i in 0..gc.m {
@@ -429,10 +433,37 @@ fn garble_table_size(gc: *const GarbleCircuit) -> usize {
     GARBLE_OK
 }
 
-fn garble_loop<F>(garble_gate: F, gc: &mut GarbleCircuit, key: &AesKey, delta: Block) where
-    F: Fn(u8, Block, Block, Block, Block, &mut Block, &mut Block, Block, *mut Block, isize, &AesKey) {
+trait ForLoop {
+    //fn for_each<A: Send+Step, F: Fn(A) + Sync>(Range<A>, F) where for<'a> &'a A: Add;
+    fn for_each<F: Fn(usize) + Sync>(Range<usize>, F); // TODO: generalize properly from usize
+}
+
+struct SerialForLoop;
+impl ForLoop for SerialForLoop {
+    //fn for_each<A: Send+Step, F: Fn(A) + Sync>(r: Range<A>, f: F) where for<'a> &'a A: Add {
+    fn for_each<F: Fn(usize) + Sync>(r: Range<usize>, f: F) {
+        for i in r {
+            f(i);
+        }
+    }
+}
+
+struct ParallelForLoop;
+impl ForLoop for ParallelForLoop {
+    //fn for_each<A: Send+Step, F: Fn(A) + Sync>(r: Range<A>, f: F) where for<'a> &'a A: Add {
+    fn for_each<F: Fn(usize) + Sync>(r: Range<usize>, f: F) {
+        // TODO: figure out if there's a safe way to construct RangeIter
+        // TODO: make this actually give correct results
+        let iter: ::rayon::par_iter::range::RangeIter<usize> = unsafe { mem::transmute(r) };
+        iter.weight_max().for_each(f)
+    }
+}
+
+fn garble_loop<F, L>(garble_gate: F, gc: &mut GarbleCircuit, key: &AesKey, delta: Block) where
+    F: Fn(u8, Block, Block, Block, Block, &mut Block, &mut Block, Block, *mut Block, isize, &AesKey) + Sync,
+    L: ForLoop {
     let mult = garble_table_multiplier(gc.ty) as isize;
-    for i in 0..gc.q {
+    L::for_each(0..gc.q, |i| {
         let i = i as isize;
         unsafe {
             let g: &mut GarbleGate = &mut *gc.gates.offset(i);
@@ -446,7 +477,7 @@ fn garble_loop<F>(garble_gate: F, gc: &mut GarbleCircuit, key: &AesKey, delta: B
                 &mut *gc.wires.offset(2 * (g.out as isize) + 1),
                 delta, gc.table.offset(mult * i), i, key);
         }
-    }
+    });
 }
 
 fn garble_gate_standard(ty: u8,
