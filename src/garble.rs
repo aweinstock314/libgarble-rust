@@ -7,8 +7,9 @@ use rand::Rng;
 use rayon::prelude::*;
 use simd::u8x16;
 use simdty::i64x2;
-use std::{mem, ptr, slice};
+use std::cmp::min;
 use std::ops::Range;
+use std::{mem, ptr, slice};
 
 pub type Block = u8x16;
 
@@ -406,7 +407,7 @@ fn garble_table_size(gc: *const GarbleCircuit) -> usize {
     //println!("global_key: {:?}\nkey: {:?}", gc.global_key, key);
 
     match gc.ty {
-        GarbleType::Standard => garble_loop::<_,SerialForLoop>(garble_gate_standard, gc, &key, delta),
+        GarbleType::Standard => garble_loop::<_,ParallelForLoop>(garble_gate_standard, gc, &key, delta),
         GarbleType::HalfGates => garble_loop::<_,SerialForLoop>(garble_gate_halfgates, gc, &key, delta),
         GarbleType::PrivacyFree => garble_loop::<_,SerialForLoop>(garble_gate_privacyfree, gc, &key, delta),
     }
@@ -454,8 +455,18 @@ impl ForLoop for ParallelForLoop {
     fn for_each<F: Fn(usize) + Sync>(r: Range<usize>, f: F) {
         // TODO: figure out if there's a safe way to construct RangeIter
         // TODO: make this actually give correct results
-        let iter: ::rayon::par_iter::range::RangeIter<usize> = unsafe { mem::transmute(r) };
-        iter.weight_max().for_each(f)
+        let numthreads = 1;
+        let iter: ::rayon::par_iter::range::RangeIter<usize> = unsafe { mem::transmute(0usize..numthreads) };
+        iter.weight_max().for_each(|i| {
+            let delta = r.end - r.start;
+            let j0 = r.start+(delta/numthreads)*i;
+            let j1 = min(r.start+(delta/numthreads)*(i+1), r.end);
+            //println!("ParallelFor: {:?}, {}: {}: {:?}", r, delta, i, j0..j1);
+            for j in j0..j1 {
+                //println!("{}", j);
+                f(j);
+            }
+        });
     }
 }
 
