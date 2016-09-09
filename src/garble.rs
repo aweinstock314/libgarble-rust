@@ -371,7 +371,9 @@ fn garble_table_size(gc: *const GarbleCircuit) -> usize {
         delta = unsafe { *gc.wires.offset(0) ^ *gc.wires.offset(1) };
     } else {
         delta = create_delta_tweak(&mut tweak);
-        for i in 0..gc.n {
+        let saved_tweak = tweak;
+        ParallelForLoop::for_each(0..gc.n, |i| {
+            let mut tweak = saved_tweak+(i as u64);
             let i = i as isize;
             unsafe {
                 let wire0 = gc.wires.offset(2*i);
@@ -389,7 +391,8 @@ fn garble_table_size(gc: *const GarbleCircuit) -> usize {
                     }
                 }
             }
-        }
+        });
+        tweak = saved_tweak+(gc.n as u64);
     }
 
     let fixed_label = random_block_tweak(&mut tweak);
@@ -407,28 +410,32 @@ fn garble_table_size(gc: *const GarbleCircuit) -> usize {
     //println!("global_key: {:?}\nkey: {:?}", gc.global_key, key);
 
     match gc.ty {
-        GarbleType::Standard => garble_loop::<_,ParallelForLoop>(garble_gate_standard, gc, &key, delta),
+        GarbleType::Standard => garble_loop::<_,SerialForLoop>(garble_gate_standard, gc, &key, delta),
         GarbleType::HalfGates => garble_loop::<_,SerialForLoop>(garble_gate_halfgates, gc, &key, delta),
         GarbleType::PrivacyFree => garble_loop::<_,SerialForLoop>(garble_gate_privacyfree, gc, &key, delta),
     }
 
+    //ParallelForLoop::for_each(0..gc.m, |i| {
     for i in 0..gc.m {
         let i = i as isize;
         unsafe {
             let idx = *gc.outputs.offset(i) as isize;
             *gc.output_perms.offset(i) = (*gc.wires.offset(2 * idx)).extract(0) & 1 == 1;
         }
-    }
+    }//);
 
     if !output_labels.is_null() {
+        let output_labels = output_labels as isize;
+        //ParallelForLoop::for_each(0..gc.m, |i| {
         for i in 0..gc.m {
             let i = i as isize;
+            let output_labels = output_labels as *mut Block;
             unsafe {
                 let idx = *gc.outputs.offset(i) as isize;
                 *output_labels.offset(2*i) = *gc.wires.offset(2 * idx);
                 *output_labels.offset(2*i+1) = *gc.wires.offset(2 * idx+1);
             }
-        }
+        }//);
     }
 
     GARBLE_OK
@@ -436,6 +443,7 @@ fn garble_table_size(gc: *const GarbleCircuit) -> usize {
 
 trait ForLoop {
     //fn for_each<A: Send+Step, F: Fn(A) + Sync>(Range<A>, F) where for<'a> &'a A: Add;
+    #[inline(always)]
     fn for_each<F: Fn(usize) + Sync>(Range<usize>, F); // TODO: generalize properly from usize
 }
 
@@ -454,8 +462,7 @@ impl ForLoop for ParallelForLoop {
     //fn for_each<A: Send+Step, F: Fn(A) + Sync>(r: Range<A>, f: F) where for<'a> &'a A: Add {
     fn for_each<F: Fn(usize) + Sync>(r: Range<usize>, f: F) {
         // TODO: figure out if there's a safe way to construct RangeIter
-        // TODO: make this actually give correct results
-        let numthreads = 1;
+        let numthreads = 4;
         let iter: ::rayon::par_iter::range::RangeIter<usize> = unsafe { mem::transmute(0usize..numthreads) };
         iter.weight_max().for_each(|i| {
             let delta = r.end - r.start;
