@@ -3,6 +3,7 @@ use libc::{c_int, c_void, calloc, free, posix_memalign};
 use llvmint::x86::{aesni_aesenc, aesni_aesenclast};
 use openssl::crypto::hash;
 use openssl_sys::RAND_bytes;
+//use prefetch;
 use rand::Rng;
 use rayon::prelude::*;
 use simd::u8x16;
@@ -239,6 +240,7 @@ fn eval_gate_halfgates(ty: u8, a: Block, b: Block, out: &mut Block, table: *cons
 
         let mut keys = [double_xmm(a) ^ tweak1, double_xmm(b) ^ tweak2];
         let masks = keys.clone();
+        //prefetch::prefetch::<prefetch::Read, prefetch::High, prefetch::Data, _>(&key);
         aes_ecb_encrypt_blocks::<AesniViaAsm>(&mut keys, key);
         let ha = keys[0] ^ masks[0];
         let hb = keys[1] ^ masks[1];
@@ -571,6 +573,7 @@ fn garble_gate_halfgates(ty: u8,
             double_xmm(b1) ^ tweak2,
         ];
         let masks = keys.clone();
+        //prefetch::prefetch::<prefetch::Read, prefetch::High, prefetch::Data, _>(&key);
         aes_ecb_encrypt_blocks::<AesniViaAsm>(&mut keys, key);
         let ha0 = keys[0] ^ masks[0];
         let ha1 = keys[1] ^ masks[1];
@@ -796,6 +799,16 @@ impl Aesni for AesniViaLLVM {
 #[inline]
 fn aes_ecb_encrypt_blocks<A: Aesni>(blocks: &mut [Block], key: &AesKey) {
     static ROUNDS: usize = 10;
+    // http://stackoverflow.com/questions/7281699/aligning-to-cache-line-and-knowing-the-cache-line-size
+    // "On x86 cache lines are 64 bytes"
+    // http://stackoverflow.com/questions/794632/programmatically-get-the-cache-line-size
+    // aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ cat /sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size
+    // 64
+    // u8x16s are 16 bytes each, so try prefetching every 4 round keys
+    /*for i in 1..3 {
+        prefetch::prefetch::<prefetch::Read, prefetch::None, prefetch::Data, _>(unsafe { mem::transmute::<&Block, *mut Block>(&key.rd_key[i*4]) });
+    }*/
+    // this doesn't end up being a performance win, see performance_logs/perf_information_2016_09_12.txt
     for b in blocks.iter_mut() {
         *b = *b ^ key.rd_key[0];
     }

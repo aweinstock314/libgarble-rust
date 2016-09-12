@@ -1,0 +1,197 @@
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # no prefetch
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [1cfe57ff9c37bbb8db71a5c7499b6fb0, e9350fb6057c210a0d87fe8496563e62, 10c79c11b3468684e6e3fe6282d0a2a7, e50cc4582a0d1c363015a5215d1df375, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: de04b61a3203f9c9ee89394b3b08e38a, global_key: bd91ac17bb81dde2579ae78058feadbe}
+29.676145 12.181933
+4.383054 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [234a51ec53323f62320248f8fb166768, cc0cf98b9ea478c8f61bbc71c7fef6b7, 2d8dc3687b3a2d2a4383fb59da5602a0, c2cb6b0fb6ac6a80879a0fd0e6be937f, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 1, 1, 0, ...], fixed_label: 2d888266c0b99509b35fa1434a9314d1, global_key: 23c52aebca3e346a05c8bb7739225942}
+24.490882 15.168909
+4.214754 s
+Type: Privacy free
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 2, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [38fd95ede903d817b593983df43bb3f4, 490f1c58d1a4265c5ed065930b0a1acc, c0f3f1bb46c0bcc4bac38268d889ee02, b101780e7e67428f51807fc627b8473a, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: a4ff8aaf727b68b68631780dab17aaa5, global_key: 4e8c0b7e477f9dac58f872b31ea33d35}
+17.074161 11.726758
+3.052989 s
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # prefetch::prefetch::<prefetch::Read, prefetch::High, prefetch::Data, _>(unsafe { mem::transmute::<&AesKey, *mut AesKey>(key) });
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [03d40f01c1d10651280d6158879870e6, f43ba371144269bbee8bf51a7a91e517, 6ac0df0e8523ab3bfdd09cb9e645a073, 9d2f737e50b0c4d13b5608fb1b4c3582, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: fe4d0858815cd31dbd63af05b71bcf3d, global_key: c8025ce981473969169ce7f06d2b81d8}
+41.393819 22.570936
+6.720404 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [c765d5158e6d494027ec814c2faa9bc5, e8461d3abd499ef10f20d95f5409cfdb, 208d6bcc057b3b4df833ea625068393c, 0faea3e3365fecfcd0ffb2712bcb6d22, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 0, 0, 0, ...], fixed_label: 0f79e818e132da1f98b052a2132c070b, global_key: d38e63a96de6c384f70552d8b5e28762}
+24.318361 15.939750
+4.193261 s
+Type: Privacy free
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 2, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [1ab79b7d3ce12dbf724962868b853680, 1d77418a04db094f830ac283da7c5d9b, c6b416c86a01ca60080ae8a947e3901d, c174cc3f523bee90f94948ac161afb06, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: 8179d88bd5af96cdd42abcf6bac2691b, global_key: 38a46e51f5a21cf64354fb0f7f94b566}
+27.973122 22.204963
+5.279656 s
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # prefetch::prefetch::<prefetch::Read, prefetch::None, prefetch::Data, _>(unsafe { mem::transmute::<&AesKey, *mut AesKey>(key) });
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes                                                                                                                         Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [9c3ad652427549c97f765486b1808899, 6feee1adb90f4a6af7242c74c810d89e, 119857ca5d68d8c985cb87d4d674cd9c, e24c6035a612db6a0d99ff26afe49d9b, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 1, 0, ...], fixed_label: 67d36058e1df94709c4e6215b2657c8f, global_key: 9f1bbdf1672f120808ccc21a7c30ddeb}
+41.231253 22.427333
+6.677515 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [d96d61897bd9b2e2c900a3c32517a4db, 8e8dfcaf0dd640cc3aa79630cc7f9a4a, d130aacc925312f63d4817c46e0a1016, 86d037eae45ce0d8ceef223787622e87, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 1, 0, ...], fixed_label: c153b8328910e2b837cba20a49681ee3, global_key: 535c0bb9faaff048b46e5eb096b1ca1a}
+24.094322 15.808738
+4.155664 s
+Type: Privacy free
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 2, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [ca8cf47076c3ed53792dd9ef3b449dbe, 75a9d2973f753bbdc4b93f8501555f0a, 04458404dbcfbc25c414188019de4962, bb60a2e392796acb7980feea23cf8bd6, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: 3b43d27a417ec0012cf0521dbb1b5d82, global_key: d4fe452205e9c024df8d156bf54044df}
+27.492817 21.879122
+5.243090 s
+-----
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # prefetch::prefetch::<prefetch::Read, prefetch::None, prefetch::Data, _>(unsafe { mem::transmute::<&Block, *mut Block>(&key.rd_key[5]) });
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes                                                                                                                         Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [386381ae14cb8b6b76f1c150b9d76f85, 61fe9fe9581cefd7cf4f911ef336162f, de4a37d02f422b2196665564bdeaec29, 87d7299763954f9d2fd8052af70b9583, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 1, ...], fixed_label: 2cfe5e97f4048bca442ba60223dfdb63, global_key: a52d368396500f5960bec7bde041ef90}
+41.368374 23.065229
+6.774918 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [a3b0c383ee4bc2d6a8d8d81e94742a9e, b8bac9dfe00c673c768afd68eb83a8e5, 32e5f42b51cc08b34a995e29dba9dd78, 29effe775f8bad5994cb7b5fa45e5f03, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 1, 1, ...], fixed_label: 8d4fc00442965c764467f9bc99a9467b, global_key: af93af0e7d9db6d0ccfec7afd1665542}
+23.616711 16.229839
+4.184608 s
+Type: Privacy free
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 2, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [12f8add048de5c270c9e66cb3060ef2b, 6b3dba7a0dca4b7f04a3b07f0dd04c5a, 1cee55473efb48e76ec451fc9d7236cf, 652b42ed7bef5fbf66f98748a0c295be, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: 602cf1b48586a041be71e8a7d4f362a9, global_key: ab9c2b7ca32d2b494fcbd55b06189b75}
+27.416398 22.832116
+5.327756 s
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # prefetch::prefetch::<prefetch::Read, prefetch::Low, prefetch::Data, _>(unsafe { mem::transmute::<&Block, *mut Block>(&key.rd_key[5]) });
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes                                                                                                                         Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [9d13acd8b5e145e220e2b1fbd847e3c8, 2a5d0bc2a603b20d6e8ab070f75d29f4, 799e86575d9f45f187e1001d722fb7d4, ced0214d4e7db21ec98901965d357de8, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 1, 1, ...], fixed_label: 3f267508cf846ab86e1a5e421d802be5, global_key: 96a7ca94f2b97629b75c95976f05c1d8}
+41.465139 23.069098
+6.797118 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [4ce1e6173a01d6dcb887c65887ac31eb, e31cc606e9e88e380d0ee0749a4088d8, 13fe0995f1d6bc193c871420b484b4ce, bc032984223fe4fd890e320ca9680dfd, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 1, 0, 1, ...], fixed_label: 0a36dfad756eb1912d34e615af649066, global_key: baa701c67128298150cb9c7b14a9286b}
+23.595476 16.213962
+4.206942 s
+Type: Privacy free
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 2, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [ea016dbb14470b6479c6637087cf127b, d3bbf290d5554ed65eb8af49edd6ccf8, ac38ff57d5d83f1397bb469f48b6a4bc, 9582607c14ca7aa1b0c58aa622af7a3f, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: fb90fef632b45b7187ea366e21d33e53, global_key: ebdcd46bf5e7643597d8192b1e4ede4c}
+27.576506 22.937737
+5.336234 s
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # prefetch::prefetch::<prefetch::Read, prefetch::Medium, prefetch::Data, _>(unsafe { mem::transmute::<&Block, *mut Block>(&key.rd_key[5]) });
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [59fd91e0ff2f0b9473ab90e4d5472603, 32e88ffc0761a28ce7aef8c3844f8f49, 60544afd24c577b181592fa4e0091e9a, 0b4154e1dc8bdea9155c4783b101b7d0, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 0, 1, 1, ...], fixed_label: f3b0eee075a2acdc630fe9caa2100c9b, global_key: b9475e3b80c49f13ef63c00f7fc23162}
+41.214372 23.106159
+6.766368 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [6abfe7df271c5537adae864237768243, 2507cb4d8bbde2de47ff937e0462c64c, 3c626214b0b0e51652cf1e840ba463cc, 73da4e861c1152ffb89e0bb838b027c3, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 1, 1, 0, ...], fixed_label: 71f8ff22202ae954799126a07aeb95a6, global_key: 336df1c73a9d4687d5f561b87706b867}
+23.803418 16.311414
+4.173943 s
+Type: Privacy free
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 2, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [7ced71de904219305f54d24a02517c7f, c19143d9157f856dd9382a9d531a55ad, 62f872e1b6bf197e08926274fd22e5c8, df8440e6338285238efe9aa3ac69cc1a, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: a4f189a8ba92fa2620f0081aee032b60, global_key: efd72859d47a95a93d9b54e2cddfadc7}
+27.353550 22.808251
+5.312559 s
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # prefetch::prefetch::<prefetch::Read, prefetch::High, prefetch::Data, _>(unsafe { mem::transmute::<&Block, *mut Block>(&key.rd_key[5]) });
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [9ee2b1dc67613ad0ca7a58b5e4898cc6, f94360075cc6f10a60791e10d34cb711, b48e03d8cd620b3182e17a8b18d8c1d3, d32fd203f6c5c0eb28e23c2e2f1dfa04, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 1, 0, ...], fixed_label: c0fdd70c0478d5609822e222fadd3d2b, global_key: a482f150e413552e431e87c058275d5b}
+41.215223 23.161382
+6.770577 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [ae654eaf117dcf9ce65a593049226ca5, e764c7d636fbfbaaf4efcaa5dbff4267, 2fdc0e0535ef6bcd772ada877752e0dc, 66dd877c12695ffb659f4912e58fce1e, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: ca3967f7312b87bd8ff847bed29a0ed4, global_key: 680feaa58883b30ced20fbc284e4cdf3}
+23.553391 16.090236
+4.193567 s
+Type: Privacy free
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 2, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [c09fe94292b3f2786e7e51f2c3fdac89, df06cd9a7fa2341fdf0f204de8688583, d403352be26601882dbbced15e2713b1, cb9a11f30f77c7ef9ccabf6e75b23abb, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: 383cef0058f6122b0d7c152378cdbce3, global_key: fbddc9028168e201d918e6c85059f918}
+27.699936 23.073326
+5.303837 s
+-----
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # prefetch {0,4,8}, High
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [3b23a2882b51f204e8bbe25cce6448f4, ba76584af2b2050571106a7000e8cd30, 5a40664b71f049c262a40c35609780f9, db159c89a813bec3fb0f8419ae1b053d, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: 669839476796fb116985eed14b2b7740, global_key: 72069900757c8a127973e0c9cf9f8a4f}
+41.720833 23.550597
+6.881863 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [1f0ae6bd6db002c23a7bc3e2fb31956a, d263dbdeb1c1f938e05d0b9f888ae8bd, 7abf36ba6c80548ed55adb8ff1e43bdd, b7d60bd9b0f1af740f7c13f2825f460a, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 1, 1, 0, ...], fixed_label: fe6a8402011c3ae193d8c1149a02612c, global_key: 8f5f9dc13bb05841a1ed0f33b37cb466}
+23.921719 16.459395
+4.305848 s
+Type: Privacy free
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 2, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [26568e48906ce4cc560b1c4452580f29, 514c3f2cf84f6b997bee844b946968ba, 4299b6637647390e3332711f6d6db9d9, 358307071e64b65b1ed7e910ab5cde4a, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: e9908ecd7e7da267806010eccba8ccd6, global_key: 955bab47bc70b847f013cf16ddb93e28}
+27.948969 23.197148
+5.413468 s
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # prefetch {0,4,8}, None
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [f45f765ec6493d7086945e688b8a03c6, 8f1c96b33a5929c94440db649349ba7f, e273ba9c1fead737969cfca1bdba9fc1, 99305a71e3fac38e544879ada5792678, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 1, 1, 1, ...], fixed_label: cb7c1706e5eeba5375244fc594a8d263, global_key: b6270e2ba6f02bb6fd5d8213fd87a2b2}
+41.574326 23.559636
+6.906235 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [59b0a0d1d9b8bfdce30d76b66dfb4257, aa7226fe14f718d5a1f8723fc54bf9c7, 102b192bde34c59a7a49edc30a3c7be4, e3e99f04137b629338bce94aa28cc074, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 0, 0, 1, ...], fixed_label: a8ade7fb7eee7dd0a327c326e2107854, global_key: 7b59dcde6ebb12adb6f3a3576df77865}
+23.730367 16.362329
+4.288115 s
+Type: Privacy free
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 2, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [9cec7551ed91cda4648987ff11f342de, 21a2dee9cf0249a61d0ae0cc31c1aa68, c8920a7cdd242821cd03c0dd80497d55, 75dca1c4ffb7ac23b480a7eea07b95e3, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: adb296cd5a6448707b619f2f18880276, global_key: f8f118030c2cd37929288b2d1973cec0}
+28.005510 23.214878
+5.449955 s
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # prefetch {4,8}, High
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [9d5ec9c8eb1c0f3cc25785af61c3ef55, c8c2b1db0cbc69278dcd38b052abe43d, 8ab8dca1adfde318312cc662a575d9a0, df24a4b24a5d85037eb67b7d961dd2c8, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 1, 0, 1, ...], fixed_label: 15ed19329ebb6079a89f8a967601eba3, global_key: 117fa7142e5dcb0ba3acb58b6cb42961}
+42.251883 23.539392
+6.946930 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [37cfcdd23d085b27d75e973837c09779, 0a4ccb8ed26f85a3250df9e13698c8d2, 4a6922898c3f46c97a836d5647079d90, 77ea24d56358984d88d0038f465fc23b, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 1, 0, 0, ...], fixed_label: 68b33d8c3844e8534f9d3047c133f099, global_key: 143c6f94b3740e24ad6ff2974cd8fdb7}
+23.933127 16.184487
+4.264296 s
+Type: Privacy free
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 2, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [0070b800717402a0d7f8b9d052b58e9b, e1225aa134bd5750e062a679fcbc9b83, 7676096cdc63d162c7e2e128a565098e, 9724ebcd99aa8492f078fe810b6c1c96, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: 6b7f4eb7e2bcc0b8dde7f26754c53746, global_key: 7ce7763326d0041b94f47ddda911c224}
+27.764399 23.125023
+5.419034 s
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # prefetch {4,8}, None
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [95e847631967ab617ce3573670b31c3d, d8882bb1b8bb93039d1c91fc20eee33e, 7f56e2a3cc5534aeeeb7bb9a9efbb2c0, 32368e716d890ccc0f487d50cea64dc3, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 1, 1, ...], fixed_label: 977d1919e397ec648ef384b5b6a533f0, global_key: 1bf7170f107001066e5a84e2ea0d413c}
+42.296965 23.677046
+6.938877 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [df93b196c9cc6b4964ab0ab03c3373b5, bec2164f65223decf9e008d0ee550c30, fd84a3d89a057039b04a87f0c757418c, 9cd5040136eb269c2d01859015313e09, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 0, 0, 0, ...], fixed_label: ee56bef9e57502608a213fce2c191b4d, global_key: 3ef460769b7fd8712ef0499f017be5e7}
+24.107890 16.333616
+4.266753 s
+Type: Privacy free
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 2, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [ae563c0855a1ff1bdef2f6be3262f371, 71144c8bf6d8e8e2bd4d4f346ad7a816, 7e2956460549a2418d04fc27c102d199, a16b26c5a630b5b8eebb45ad99b78afe, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: 13a7a05feb465540b4492b07a9c6cb06, global_key: 0b6cfd6425c792dd947eb1b7afcd5c65}
+27.726049 23.128801
+5.436844 s
+-----
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # targeted to HalfGates, None
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [2059080964f90689ddee22f36b443e69, e361771b5f5e3bf8a9a4760ef1e8b1e7, 80903894a4cd015231197844d4a37b86, 43a847869f6a3c2345532cb94e0ff408, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 1, 0, 0, ...], fixed_label: b6ce1bfe024ff1eddc3689c614db7377, global_key: 9cb0972605d26921422fed8a9c22ceed}
+30.042267 12.496704
+4.479594 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [3eb5d974a2dd325d23ea5a8de5dfefe4, 83dd8cef122c22f6a0bbf83d2148475f, f609a2afe8b8d736f5f4fac20efc7e31, 4b61f7345849c79d76a55872ca6bd68a, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 1, 0, 1, ...], fixed_label: 067f27311fee77d0a5f2917017a7a5c7, global_key: b7d7934baf742f858c00b082efad55ec}
+24.872325 15.992883
+4.321038 s
+Type: Privacy free
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 2, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [9e3b9b3eef01c0bec61436d8cbe4a874, 85648a6b0556e4f58832f57f24f66cce, 30afd14c28325ebb09947a9d0e540ed6, 2bf0c019c2657af047b2b93ae146ca6c, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: 47b71c116b372f5ced25ee8b3caefefe, global_key: 17dcaf26d04b273dd6efebed122cdeb6}
+17.305157 12.043988
+3.128958 s
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # targeted to HalfGates, High
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [0f89f278ff29c08f90152978f67d6fc2, 2e94a4fd306c72cfbb17faa0e999e9ba, 34b250fb0c7e6eb031da4c524cec95ef, 15af067ec33bdcf01ad89f8a53081397, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 1, 1, ...], fixed_label: 06a6a771d9f3f948e8b694fbf20a557b, global_key: 07466e7390274e85a336c07c78d30fd1}
+29.847380 12.367255
+4.426096 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [d7846406d94bee1fbf0993a6d615839d, 74d1c7d15c32b40305a21f9f2852038a, c4dbb2e0e3831cf53d1cb904bcbc71e5, 678e113766fa46e987b7353d42fbf1f2, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 1, ...], fixed_label: fc6a93d607289e98ca06c0596acaa96b, global_key: 0d785ff61850897c8e5e7dcaab741211}
+24.861698 16.054232
+4.322466 s
+Type: Privacy free
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 2, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [0483cca7fc8f642ca2e11112d6eba96e, 6fd65d47eed78996dec8b237ef767697, 46dafae95783a888edbc756f1e6f1e92, 2d8f6b0945db45329195d64a27f2c16b, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: ad79fc8f0402fc76b4988753d44733e5, global_key: fc9c778e0d69986763d161e8eadf175c}
+17.421037 12.094643
+3.145443 s
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ # removed all prefetches
+aweinstock@rpi-crypto-research-box-1:~/Documents/libgarble/test$ ./aes
+Type: Standard
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 0, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [6bc155038b6cd3f139aa3c21c8dbbd9e, 94c1132e83dfacb52c3bdc65871c49cc, 2e22ad67c122b1bc64c4023ef2c29cca, d122eb4ac991cef87155e27abd056898, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [1, 1, 0, 0, ...], fixed_label: e117070dcb159dc22f6361b366ef6627, global_key: c1c78c7b83a5d22d5bcf798332e486e0}
+29.969910 12.386904
+4.440742 s
+Type: Half-gates
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 1, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [1e5940d69cb5ac363f6d23214052c52e, f7d648b622de33ed16c168b424acfc08, 08e057f3aca23dc8d111fc25222f5a09, e16f5f9312c9a213f8bdb7b046d1632f, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 1, 0, ...], fixed_label: 368af6af9dc1283914e0c2a57fca2373, global_key: 5e2bdc6c154b9d3a860083a15da7d94f}
+24.661290 15.265921
+4.249270 s
+Type: Privacy free
+GarbleCircuit { n: 1408, m: 128, q: 35920, r: 37330, ty: 2, gates: [GarbleGate(6, 0, 128, 1410), GarbleGate(6, 1, 129, 1411), GarbleGate(6, 2, 130, 1412), GarbleGate(6, 3, 131, 1413), ...], table: [00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, 00000000000000000000000000000000, ...], wires: [1e2ead4647a6b3ae4f1cc9f67cf91310, 158c5df4999f2a7275683aa58286e4d6, 304cc009876d754b54fe326d625f9c26, 3bee30bb5954ec976e8ac13e9c206be0, ...], outputs: [33718, 33719, 33720, 33721, ...], output_perms: [0, 0, 0, 0, ...], fixed_label: d46a6716bfb7cb4f30301ac4bad64b4f, global_key: 08343b602c0fd15d8621ca75f5b2999f}
+17.226209 12.013309
+3.114852 s
+-----

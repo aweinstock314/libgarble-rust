@@ -1,4 +1,4 @@
-#![feature(asm,const_fn,test)]
+#![feature(asm,associated_consts,const_fn,test)]
 extern crate byteorder;
 extern crate libc;
 extern crate llvmint;
@@ -10,4 +10,5 @@ extern crate simd;
 extern crate simdty;
 extern crate test;
 
+pub mod prefetch;
 pub mod garble;
