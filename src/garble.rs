@@ -3,7 +3,7 @@ use libc::{c_int, c_void, calloc, free, posix_memalign};
 use llvmint::x86::{aesni_aesenc, aesni_aesenclast};
 use openssl::crypto::hash;
 use openssl_sys::RAND_bytes;
-//use prefetch;
+use prefetch::prefetch;
 use rand::Rng;
 use rayon::prelude::*;
 use simd::u8x16;
@@ -560,6 +560,7 @@ fn garble_gate_halfgates(ty: u8,
         *out0 = a0 ^ b0;
         *out1 = *out0 ^ delta;
     } else {
+        prefetch::prefetch::<prefetch::Read, prefetch::High, prefetch::Data, _>(&key);
         let idx = idx as u64;
         let pa = (a0.extract(0) & 1) == 1;
         let pb = (b0.extract(0) & 1) == 1;
@@ -806,9 +807,10 @@ fn aes_ecb_encrypt_blocks<A: Aesni>(blocks: &mut [Block], key: &AesKey) {
     // 64
     // u8x16s are 16 bytes each, so try prefetching every 4 round keys
     /*for i in 1..3 {
-        prefetch::prefetch::<prefetch::Read, prefetch::None, prefetch::Data, _>(unsafe { mem::transmute::<&Block, *mut Block>(&key.rd_key[i*4]) });
+        prefetch::prefetch::<prefetch::Read, prefetch::None, prefetch::Data, _>(&key.rd_key[i*4]));
     }*/
     // this doesn't end up being a performance win, see performance_logs/perf_information_2016_09_12.txt
+    //prefetch::prefetch::<prefetch::Read, prefetch::None, prefetch::Data, _>(&key.rd_key[0]);
     for b in blocks.iter_mut() {
         *b = *b ^ key.rd_key[0];
     }
