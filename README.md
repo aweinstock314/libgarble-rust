@@ -10,9 +10,10 @@ somedir/$ git clone https://github.com/aweinstock314/libgarble-rust
 somedir/libgarble$ autoreconf -f -i && ./configure --with-msgpack=no && make
 somedir/libgarble/test$ make aes
 somedir/libgarble/test$ ./aes > output_with_c_dylib.txt
+somedir/libgarble-rust$ source setup_rustflags
+somedir/libgarble-rust$ rustup override set nightly
 somedir/libgarble-rust$ cargo build --release
 somedir/libgarble-rust$ ./tamper_with_so.sh # this is not idempotent (should only be run once)
-somedir/libgarble/test$ make aes
 somedir/libgarble/test$ ./aes > output_with_rust_dylib.txt
 ```
 
