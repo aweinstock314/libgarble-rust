@@ -2,6 +2,23 @@
 
 This is a port from C to Rust of Alex Malozemoff's [libgarble](https://github.com/amaloz/libgarble). It produces a dynamic library (shared object) that should be a drop-in replacement (although only the functions needed to run his AES test circuit are currently implmented).
 
+## Installing dependencies
+
+### rustup
+The easiest way to install rust is through `rustup`:
+```bash
+$ wget https://sh.rustup.rs -O rustup_installer
+$ chmod +x ./rustup_installer
+$ ./rustup_installer
+```
+
+Once `rustup` is installed, use your favorite editor to add `source ~/.cargo/env` to your `.bashrc` (to put the executables it installs on your PATH).
+
+`libgarble-rust` has other dependencies, but they are automatically managed through `cargo`.
+
+### msgpack
+The C driver program that benchmarks the garbling/evaluation of an AES circuit depends on the `msgpack` serialization library. If you're on any Debian-derived OS, install it via `sudo apt-get install libmsgpack-dev`. `--with-msgpack=no` is still passed to `configure` below to avoid fiddling with `pkg-config` manifests, but `make aes` manages to find the right version anyway.
+
 ## Building and running
 
 ```bash
